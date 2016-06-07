@@ -28,7 +28,7 @@ public class SqliteManager {
     private SqliteManager() {
 //        PreparedStatement statement1 = null;
 //        PreparedStatement statement2 = null;
-        createTables();
+//        createTables();
         classFiled = new HashMap<Integer, List<InstanceField>>();
         traceIds = new ArrayList<Integer>();
         classConstantFiled = new HashMap<Integer, List<ConstantField>>();
@@ -36,6 +36,7 @@ public class SqliteManager {
         classLength = new HashMap<Integer, Integer>();
     }
 
+    
     private static synchronized void syncInit() {
         if (instance == null) {
             instance = new SqliteManager();
@@ -90,12 +91,6 @@ public class SqliteManager {
                     ClassDefinition temp = (ClassDefinition) obj;
                     int length1 = 0;
                     List<InstanceField> list = new ArrayList<InstanceField>();
-//                    for (int j = 0;j<constantFieldList.size();j++)
-//                        length1 += constantFieldList.get(j).getValue().length;
-//                    for (int j = 0;j<staticFields.size();j++)
-//                        length1 += staticFields.get(j).getValue().length;
-//                    classLength.put(temp.getObjectId(),length1);
-//                    classConstantFiled.put(temp.ge)
                     list.addAll(temp.getInstanceFields());
                     if (temp.getSuperClassObjectId() != 0 && classFiled.get(temp.getSuperClassObjectId()) != null)
                         list.addAll(classFiled.get(temp.getSuperClassObjectId()));
@@ -120,19 +115,6 @@ public class SqliteManager {
                         } else {
                             cl += constantField.getValue().length;
                         }
-//                        if (type==2||type==10){
-//                            int value = Utils.byteArrayToInt(bytes,i);
-//                            if (type==2&&value==0){
-//                                statement.close();
-//                                continue;
-//                            }
-//                            statement.setInt(1,value);
-//                        }else{
-//                            byte[] value = new byte[size];
-//                            for (int j=0;j<size;j++)
-//                                value[j] = bytes[i+j];
-//                            statement.setBytes(1,value);
-//                        }
                     }
                     while (staticFieldIterator.hasNext()) {
                         StaticField staticField = staticFieldIterator.next();
@@ -151,39 +133,7 @@ public class SqliteManager {
                             }
                         }
                         classLength.put(temp.getObjectId(), cl);
-//                        if (type==2||type==10){
-//                            int value = Utils.byteArrayToInt(bytes,i);
-//                            if (type==2&&value==0){
-//                                statement.close();
-//                                continue;
-//                            }
-//                            statement.setInt(1,value);
-//                        }else{
-//                            byte[] value = new byte[size];
-//                            for (int j=0;j<size;j++)
-//                                value[j] = bytes[i+j];
-//                            statement.setBytes(1,value);
-//                        }
                     }
-//                    PreparedStatement findSuperField = conn.prepareStatement(new StringBuilder("select * from ").append(SQLDOMAIN.TABLE_CLASS_INSTANCE_FIELD)
-//                    .append(" where class_id = ").append(temp.getSuperClassObjectId()).append(";").toString());
-//                    ResultSet findSuperFieldResult = findSuperField.executeQuery();
-//                    while (findSuperFieldResult.next()){
-//                        BasicType basicType = BasicType.fromType(findSuperFieldResult.getInt("type"));
-//                        list.add(new InstanceField(basicType,findSuperFieldResult.getInt("field_name_id")));
-//                    }
-//                    findSuperFieldResult.close();
-//                    int length = temp.getLength();
-//                    for (i = 0;i<list.size();i++){
-//                        int id = list.get(i).getFieldNameId();
-//                        int type = list.get(i).getType().type;
-//                        int size = list.get(i).getType().size;
-//                        PreparedStatement insertClassField = conn.prepareStatement(new StringBuilder("insert into ")
-//                                .append(SQLDOMAIN.TABLE_CLASS_INSTANCE_FIELD).append(" values (").append(temp.getObjectId()).
-//                                        append(",").append(id).append(",").append(type).append(",").append(size).append(");").toString());
-//                        insertClassField.executeUpdate();
-//                        insertClassField.close();
-//                    }
                     if (rs.getString("value").equals("java.lang.ref.FinalizerReference"))
                         finizeId = temp.getObjectId();
                     buffer.append("insert into ").append(SQLDOMAIN.TABLE_CLASS).append(" values (").append(temp.getObjectId()).append(",")
@@ -192,9 +142,7 @@ public class SqliteManager {
                             .append(temp.getProtectionDomainObjectId()).append(",").append(temp.getInstanceSize()).append(",")
                             .append(temp.getLength()).append(");");
                     insertState = conn.prepareStatement(buffer.toString());
-//                    stat.executeUpdate(buffer.toString());
                     insertState.executeUpdate();
-//                    conn.commit();
                     if (insertState != null) {
                         insertState.close();
                     }
@@ -213,7 +161,6 @@ public class SqliteManager {
                         types.add(type.type);
                         sizes.add(type.size);
                     }
-//                    selectResult.close();
                     Iterator iterator = types.iterator();
                     Iterator iterator1 = sizes.iterator();
                     byte[] bytes = instance.getInstanceFieldData();
@@ -254,9 +201,7 @@ public class SqliteManager {
                             getObjectId()).append(",").append(((PrimitiveArray) obj).getType().type).append(",").append(((PrimitiveArray) obj).
                             getArrayData().length).append(");");
                     insertState = conn.prepareStatement(buffer.toString());
-//                    stat.executeUpdate(buffer.toString());
                     insertState.executeUpdate();
-//                    conn.commit();
                     if (insertState != null) {
                         insertState.close();
                     }
@@ -264,26 +209,16 @@ public class SqliteManager {
                 case HeapTag.OBJECT_ARRAY_DUMP:
                     ObjectArray objectArray = (ObjectArray) obj;
                     int num = objectArray.getCount();
-//                    int objLength = 0;
                     for (i = 0; i < num && objectArray.getElements()[i] != 0; i++) {
-//                        int elementLength = initInstanceLength(objectArray.getElements()[i]);
-//                        objLength += elementLength;
-//                        PreparedStatement instanceState = conn.prepareStatement(new StringBuilder("select * from ").append(SQLDOMAIN.TABLE_INSTANCE)
-//                                .append(" where id = ").append(objectArray.getElements()[i]).append(";").toString());
-//                        ResultSet instanceResult = instanceState.executeQuery();
-//                        int elementLength = instanceResult.getInt("length");
-//                        objLength += elementLength;
                         StringBuilder buffer1 = new StringBuilder("insert into ").append(SQLDOMAIN.TABLE_INDEX_HEAP_OBJARR_CLASS).append(" values(").append(objectArray.getObjectId())
                                 .append(",").append(objectArray.getElements()[i]).append(",").append(0).append(");");
                         PreparedStatement statement = conn.prepareStatement(buffer1.toString());
                         statement.executeUpdate();
                     }
-//                    conn.commit();
                     buffer.append("insert into ").append(SQLDOMAIN.TABLE_OBJARRAY).append(" values(").append(objectArray.getObjectId())
                             .append(",").append(objectArray.getElementClassId()).append(",").append(objectArray.getCount()).append(",")
                             .append(0).append(");");
                     insertState = conn.prepareStatement(buffer.toString());
-//                    stat.executeUpdate(buffer.toString());
                     insertState.executeUpdate();
                     if (insertState != null) {
                         insertState.close();
@@ -311,7 +246,6 @@ public class SqliteManager {
 
     public void deleteCycle() {
         try {
-//            System.out.print(finizeId);
             PreparedStatement findFinaLizerInstance = conn.prepareStatement("select * from " + SQLDOMAIN.TABLE_INSTANCE);
             ResultSet set = findFinaLizerInstance.executeQuery();
             while (set.next()) {
@@ -325,11 +259,12 @@ public class SqliteManager {
         }
     }
 
-    private void createTables() {
+    public void createTables(String dbName) {
         try {
             Class.forName("org.sqlite.JDBC");
             //建立一个数据库名zieckey.db的连接，如果不存在就在当前目录下创建之
-            conn = DriverManager.getConnection("jdbc:sqlite:hprof.db");
+            String conName = "jdbc:sqlite:"+dbName +".db";
+            conn = DriverManager.getConnection(conName);
             conn.setAutoCommit(false);
             PreparedStatement delStringTable = conn.prepareStatement("drop table if exists " + SQLDOMAIN.TABLE_STRING + ";");
             delStringTable.executeUpdate();
@@ -353,12 +288,6 @@ public class SqliteManager {
                     " (id int primary key,class_id int,data_size int,length int);");
             createInstanceTable.executeUpdate();
             createInstanceTable.close();
-//            PreparedStatement dropHeapTable = conn.prepareStatement("drop table if exists "+SQLDOMAIN.TABLE_HEAP+";");
-//            dropHeapTable.executeUpdate();
-//            dropHeapTable.close();
-//            PreparedStatement createHeapTable = conn.prepareStatement("create table " +SQLDOMAIN.TABLE_HEAP+"(id int primary key,length int);");
-//            createHeapTable.executeUpdate();
-//            createHeapTable.close();
             PreparedStatement dropPrimitivearrayTable = conn.prepareStatement("drop table if exists " + SQLDOMAIN.TABLE_PRIMITIVEARRAY + ";");
             dropPrimitivearrayTable.executeUpdate();
             dropPrimitivearrayTable.close();

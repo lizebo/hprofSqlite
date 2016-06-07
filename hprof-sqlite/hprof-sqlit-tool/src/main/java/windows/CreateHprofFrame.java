@@ -134,7 +134,14 @@ public class CreateHprofFrame extends JFrame {
 				if (ip!=null&&packageName!=null&&hprofPath!=null) {
 					CmdProceManager.createHprof(ip, packageName, hprofPath);
 				}
+				setVisible(false);
 			}
 		});
+	}
+
+	@Override
+	public void setDefaultCloseOperation(int operation) {
+		// TODO Auto-generated method stub
+		this.setVisible(false);
 	}
 }

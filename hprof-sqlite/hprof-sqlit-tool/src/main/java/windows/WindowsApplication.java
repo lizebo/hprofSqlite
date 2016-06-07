@@ -36,6 +36,8 @@ public class WindowsApplication {
 
 	private JFrame frame;
 	private File origin;
+	private LoadFileFrame loadFileFrame;
+	private CreateHprofFrame createHprofFrame;
 
 	/**
 	 * Launch the application.
@@ -68,7 +70,8 @@ public class WindowsApplication {
 		frame.setBounds(100, 100, 450, 300);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
-		
+		loadFileFrame = new LoadFileFrame();
+		createHprofFrame = new CreateHprofFrame();
 		JFileChooser fileChooser = new JFileChooser();
 		
 		JButton btnNewButton = new JButton("\u8F7D\u5165\u6587\u4EF6");
@@ -79,8 +82,7 @@ public class WindowsApplication {
 				// TODO Auto-generated method stub
 //			    JFrame frame = new JFrame("title2");
 //			    fileFrame.setVisible(true);
-				fileChooser.showOpenDialog(frame);
-				origin = fileChooser.getSelectedFile();
+				loadFileFrame.setVisible(true);
 			}
 		});
 		
@@ -95,40 +97,27 @@ public class WindowsApplication {
 //				fileFrame.setVisible(true);
 //			}
 //		});
-		btnNewButton.setBounds(172, 84, 93, 23);
+		btnNewButton.setBounds(150, 69, 135, 23);
 		frame.getContentPane().add(btnNewButton);
 		
-		JButton button = new JButton("\u89E3\u6790");
-		button.setBounds(172, 146, 93, 23);
+		JButton button = new JButton("\u8F7D\u5165\u6570\u636E\u5E93\u6587\u4EF6");
+		button.setBounds(150, 135, 135, 23);
 		frame.getContentPane().add(button);
+		
+		JButton btnNewButton_1 = new JButton("\u4E00\u952E\u751F\u6210hprof\u6587\u4EF6");
+		btnNewButton_1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				createHprofFrame.setVisible(true);
+			}
+		});
+		btnNewButton_1.setBounds(150, 102, 135, 23);
+		frame.getContentPane().add(btnNewButton_1);
 		
 		button.addActionListener(new ActionListener() {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				// TODO Auto-generated method stub
-				synchronized (this) {
-					if (origin!=null) {
-			            InputStream in;
-						try {
-							in = new BufferedInputStream(new FileInputStream(origin));
-				            SQLDataProcessor processor = new SQLDataProcessor();
-				            HprofReader reader = new HprofReader(in, processor);
-				            while (reader.hasNext()) {
-				                reader.next();
-				            }
-				            SqliteManager.getInstance().initClassLength();
-				            SqliteManager.getInstance().getTotalSize();
-						} catch (FileNotFoundException e1) {
-							// TODO Auto-generated catch block
-							e1.printStackTrace();
-						} catch (IOException e1) {
-							// TODO Auto-generated catch block
-							e1.printStackTrace();
-						}
-
-					}
-				}
 
 			}
 		});
