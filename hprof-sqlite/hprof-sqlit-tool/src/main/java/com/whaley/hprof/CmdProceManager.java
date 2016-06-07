@@ -6,7 +6,7 @@ import java.io.InputStreamReader;
 
 public class CmdProceManager {
 	public static void createHprof(String ip,String appName,String hprofPath){
-		String path = "d:/createHprof.bat";
+		String path = "createHprof.bat";
 		ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "call", "\"" + path + "\"", ip,appName,hprofPath);
 		BufferedReader br;
 		try {
