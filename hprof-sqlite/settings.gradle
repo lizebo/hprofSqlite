@@ -1,0 +1,4 @@
+include ':hprof-sqlit-tool'
+rootProject.name = 'hprof-sqlite'
+
+include 'hprof-lib'

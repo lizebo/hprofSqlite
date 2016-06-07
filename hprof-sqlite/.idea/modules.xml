@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/hprof-lib/hprof-lib.iml" filepath="$PROJECT_DIR$/hprof-lib/hprof-lib.iml" />
+      <module fileurl="file://$PROJECT_DIR$/hprof-sqlit-tool/hprof-sqlit-tool.iml" filepath="$PROJECT_DIR$/hprof-sqlit-tool/hprof-sqlit-tool.iml" />
+      <module fileurl="file://$PROJECT_DIR$/hprof-sqlite.iml" filepath="$PROJECT_DIR$/hprof-sqlite.iml" />
+    </modules>
+  </component>
+</project>
