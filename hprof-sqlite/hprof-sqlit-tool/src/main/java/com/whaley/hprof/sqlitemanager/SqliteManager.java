@@ -243,6 +243,20 @@ public class SqliteManager {
             e.printStackTrace();
         }
     }
+    
+    public void connect(String dbName){
+        try {
+			Class.forName("org.sqlite.JDBC");
+	        String conName = "jdbc:sqlite:"+dbName;
+	        conn = DriverManager.getConnection(conName);
+	        conn.setAutoCommit(false);
+		} catch (ClassNotFoundException | SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        //建立一个数据库名zieckey.db的连接，如果不存在就在当前目录下创建之
+
+    }
 
     public void deleteCycle() {
         try {

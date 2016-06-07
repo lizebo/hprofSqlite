@@ -37,6 +37,7 @@ public class WindowsApplication {
 	private JFrame frame;
 	private File origin;
 	private LoadFileFrame loadFileFrame;
+	private LoadDBFrame loadDBFrame;
 	private CreateHprofFrame createHprofFrame;
 
 	/**
@@ -72,6 +73,7 @@ public class WindowsApplication {
 		frame.getContentPane().setLayout(null);
 		loadFileFrame = new LoadFileFrame();
 		createHprofFrame = new CreateHprofFrame();
+		loadDBFrame = new LoadDBFrame();
 		JFileChooser fileChooser = new JFileChooser();
 		
 		JButton btnNewButton = new JButton("\u8F7D\u5165\u6587\u4EF6");
@@ -118,7 +120,7 @@ public class WindowsApplication {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				// TODO Auto-generated method stub
-
+				loadDBFrame.setVisible(true);
 			}
 		});
 	}
