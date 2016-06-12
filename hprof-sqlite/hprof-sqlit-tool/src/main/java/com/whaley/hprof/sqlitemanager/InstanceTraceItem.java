@@ -12,9 +12,18 @@ import javax.swing.tree.TreeNode;
 public class InstanceTraceItem implements TreeNode{
     private int id;
     private String name;
+    private int length;
     private ArrayList<InstanceTraceItem> traceItems;
 
-    public InstanceTraceItem() {
+    public int getLength() {
+		return length;
+	}
+
+	public void setLength(int length) {
+		this.length = length;
+	}
+
+	public InstanceTraceItem() {
         traceItems = new ArrayList<InstanceTraceItem>();
     }
 

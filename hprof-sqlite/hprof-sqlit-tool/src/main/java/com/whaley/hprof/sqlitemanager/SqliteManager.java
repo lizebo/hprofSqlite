@@ -3,6 +3,7 @@ package com.whaley.hprof.sqlitemanager;
 import com.badoo.hprof.library.Tag;
 import com.badoo.hprof.library.heap.HeapTag;
 import com.badoo.hprof.library.model.*;
+import com.sun.org.apache.regexp.internal.recompile;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -19,7 +20,7 @@ public class SqliteManager {
     private int totalSize = 0;
 
     private HashMap<Integer, List<InstanceField>> classFiled;
-    private List<Integer> traceIds;
+    private ArrayList<Integer> traceIds;
     private int finizeId = 0;
     private HashMap<Integer, List<ConstantField>> classConstantFiled;
     private HashMap<Integer, List<StaticField>> classStaticFiled;
@@ -250,6 +251,8 @@ public class SqliteManager {
 	        String conName = "jdbc:sqlite:"+dbName;
 	        conn = DriverManager.getConnection(conName);
 	        conn.setAutoCommit(false);
+            SqliteManager.getInstance().getTotalSize();
+	        
 		} catch (ClassNotFoundException | SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -323,13 +326,6 @@ public class SqliteManager {
                     "(id int,element_instance_id int,int length);");
             createHeapObjArrayIndex.executeUpdate();
             createHeapObjArrayIndex.close();
-//            PreparedStatement dropClassInstanceTable = conn.prepareStatement("drop table if exists "+SQLDOMAIN.TABLE_CLASS_INSTANCE_FIELD+";");
-//            dropClassInstanceTable.executeUpdate();
-//            dropClassInstanceTable.close();
-//            PreparedStatement createClassInstanceTable = conn.prepareStatement("create table " + SQLDOMAIN.TABLE_CLASS_INSTANCE_FIELD +
-//                    "(class_id int,field_name_id int,type int,size int);");
-//            createClassInstanceTable.executeUpdate();
-//            createClassInstanceTable.close();
             PreparedStatement dropInstanceFiled = conn.prepareStatement("drop table if exists " + SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD + ";");
             dropInstanceFiled.executeUpdate();
             dropInstanceFiled.close();
@@ -357,23 +353,28 @@ public class SqliteManager {
             }
         }
     }
+    
+    public boolean hasConnect(){
+    	return conn!=null;
+    }
 
-    public void findHeapMax() {
+    public ArrayList<InstanceTraceItem> findHeapMax() {
+    	ArrayList<InstanceTraceItem> items = new ArrayList<InstanceTraceItem>();
+        traceIds.clear();
         try {
             PreparedStatement selectMaxState = conn.prepareStatement("select * from table_primitive_array order by length desc limit 3;");
             ResultSet resultSet = selectMaxState.executeQuery();
-//            selectMaxState.executeUpdate();
             while (resultSet.next()) {
                 System.out.print("可疑内存路径："+"\n");
                 System.out.print(BasicType.fromType(resultSet.getInt("type")).getTypeName()+"["+resultSet.getInt("length")+"]"+"\n");
                 int id = resultSet.getInt("id");
-                printTrance(id);
-//                traceIds.clear();
-//                printTranceById(id);
+                traceIds.clear();
+                items.add(getInstanceTraceItem(id));
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return items;
     }
 
     String getClassNameForInstance(int instance_id) {
@@ -442,85 +443,86 @@ public class SqliteManager {
         return null;
     }
 
-    public void printTrance(int id){
-        traceIds.clear();
-        printTranceById(id,0);
-    }
+//    public void printTrance(int id){
+//        traceIds.clear();
+//        printTranceById(id,0);
+//    }
 
     public InstanceTraceItem getInstanceTrace(int id){
         return getInstanceTraceItem(id);
     }
 
 
-    void printTranceById(int id,int level) {
-        level ++;
-        if (traceIds.contains(id)) {
-            return;
-        }
-        traceIds.add(id);
-        try {
-            boolean hasData = false;
-            PreparedStatement state = conn.prepareStatement("select instance_id from " + SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD
-                    + " where value = " + id);
-            ResultSet set = state.executeQuery();
-            while (set.next()) {
-                hasData = true;
-                int temp_id = set.getInt("instance_id");
-                String name = getClassNameForInstance(id);
-                if (name != null) {
-                    if (name.equals("java.lang.ref.FinalizerReference")) {
-                        return;
-                    }
-                    for (int i = 0;i<level;i++)
-                        System.out.print("|----");
-                    System.out.print("("+id+")"+name + "["+temp_id+"]"+"\n");
-                }
-                printTranceById(temp_id,level);
-            }
-            if (!hasData) {
-                PreparedStatement statement = conn.prepareStatement("select id from " + SQLDOMAIN.TABLE_INDEX_HEAP_OBJARR_CLASS
-                        + " where element_instance_id=" + id);
-                ResultSet objSet = statement.executeQuery();
-                while (objSet.next()) {
-                    hasData = true;
-                    int objId = objSet.getInt("id");
-                    String name = getClassNameForInstance(id);
-                    if (name != null) {
-                        if (name.equals("java.lang.ref.FinalizerReference")) {
-                            return;
-                        }
-                        for (int i = 0;i<level;i++)
-                            System.out.print("|----");
-                        System.out.print("("+id+")"+name + "["+objId+"]"+"\n");
-                    }
-                    printTranceById(objId,level);
-                    statement.close();
-                    objSet.close();
-                }
-                if (!hasData) {
-                    PreparedStatement classState = conn.prepareStatement("select class_id from " + SQLDOMAIN.INDEW_CLASS_CONS_STATIC_FIELD
-                            + " where value=" + id);
-                    ResultSet classSet = classState.executeQuery();
-                    while (classSet.next()) {
-                        String className = getClassNameForClass(classSet.getInt("class_id"));
-                        for (int i = 0;i<level;i++)
-                            System.out.print("|----");
-                        if (className != null) {
-                            System.out.print( "("+id+")" + className+ "\n");
-                        }
-                    }
-                    classSet.close();
-                    classState.close();
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
+//    void printTranceById(int id,int level) {
+//        level ++;
+//        if (traceIds.contains(id)) {
+//            return;
+//        }
+//        traceIds.add(id);
+//        try {
+//            boolean hasData = false;
+//            PreparedStatement state = conn.prepareStatement("select instance_id from " + SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD
+//                    + " where value = " + id);
+//            ResultSet set = state.executeQuery();
+//            while (set.next()) {
+//                hasData = true;
+//                int temp_id = set.getInt("instance_id");
+//                String name = getClassNameForInstance(id);
+//                if (name != null) {
+//                    if (name.equals("java.lang.ref.FinalizerReference")) {
+//                        return;
+//                    }
+//                    for (int i = 0;i<level;i++)
+//                        System.out.print("|----");
+//                    System.out.print("("+id+")"+name + "["+temp_id+"]"+"\n");
+//                }
+//                printTranceById(temp_id,level);
+//            }
+//            if (!hasData) {
+//                PreparedStatement statement = conn.prepareStatement("select id from " + SQLDOMAIN.TABLE_INDEX_HEAP_OBJARR_CLASS
+//                        + " where element_instance_id=" + id);
+//                ResultSet objSet = statement.executeQuery();
+//                while (objSet.next()) {
+//                    hasData = true;
+//                    int objId = objSet.getInt("id");
+//                    String name = getClassNameForInstance(id);
+//                    if (name != null) {
+//                        if (name.equals("java.lang.ref.FinalizerReference")) {
+//                            return;
+//                        }
+//                        for (int i = 0;i<level;i++)
+//                            System.out.print("|----");
+//                        System.out.print("("+id+")"+name + "["+objId+"]"+"\n");
+//                    }
+//                    printTranceById(objId,level);
+//                    statement.close();
+//                    objSet.close();
+//                }
+//                if (!hasData) {
+//                    PreparedStatement classState = conn.prepareStatement("select class_id from " + SQLDOMAIN.INDEW_CLASS_CONS_STATIC_FIELD
+//                            + " where value=" + id);
+//                    ResultSet classSet = classState.executeQuery();
+//                    while (classSet.next()) {
+//                        String className = getClassNameForClass(classSet.getInt("class_id"));
+//                        for (int i = 0;i<level;i++)
+//                            System.out.print("|----");
+//                        if (className != null) {
+//                            System.out.print( "("+id+")" + className+ "\n");
+//                        }
+//                    }
+//                    classSet.close();
+//                    classState.close();
+//                }
+//            }
+//        } catch (SQLException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     InstanceTraceItem getInstanceTraceItem(int id) {
         InstanceTraceItem traceItem = new InstanceTraceItem();
         traceItem.setId(id);
+
         if (traceIds.contains(id)) {
             return null;
         }
@@ -563,35 +565,34 @@ public class SqliteManager {
                         if (temp!=null){
                             traceItem.addTrace(temp);;
                         }
-//                        for (int i = 0;i<level;i++)
-//                            System.out.print("|----");
-//                        System.out.print("("+id+")"+name + "["+objId+"]"+"\n");
                     }
                     statement.close();
                     objSet.close();
                 }
                 if (!hasData) {
+                	hasData = true;
                     PreparedStatement classState = conn.prepareStatement("select class_id from " + SQLDOMAIN.INDEW_CLASS_CONS_STATIC_FIELD
                             + " where value=" + id);
                     ResultSet classSet = classState.executeQuery();
                     while (classSet.next()) {
                         String className = getClassNameForClass(classSet.getInt("class_id"));
                         traceItem.setName(className);
-//                        for (int i = 0;i<level;i++)
-//                            System.out.print("|----");
-//                        if (className != null) {
-//                            System.out.print( "("+id+")" + className+ "\n");
-//                        }
                     }
                     classSet.close();
                     classState.close();
                 }
+//                if (!hasData) {
+//					
+//				}
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        int length = initInstanceLength(id);
+        traceItem.setLength(length);
         if (traceItem.getName()!=null)
             return traceItem;
+
         return null;
     }
 
@@ -663,7 +664,7 @@ public class SqliteManager {
         return totalSize;
     }
 
-    private int initInstanceLength(int id) {
+	private int initInstanceLength(int id) {
         int length = 0;
         try {
             boolean hasInstance = false;
@@ -897,5 +898,7 @@ public class SqliteManager {
             e.printStackTrace();
         }
     }
+    
+//    public interface 
 
 }

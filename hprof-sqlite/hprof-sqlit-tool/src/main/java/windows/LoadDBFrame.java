@@ -1,6 +1,5 @@
 package windows;
 
-import java.awt.BorderLayout;
 import java.awt.EventQueue;
 
 import javax.swing.JFileChooser;
@@ -77,6 +76,8 @@ public class LoadDBFrame extends JFrame {
 				String dbName = fileChooser.getSelectedFile().getAbsolutePath();
 				if (dbName!=null) {
 					SqliteManager.getInstance().connect(dbName);
+					setVisible(false);
+
 				}
 			}
 		});
@@ -87,7 +88,7 @@ public class LoadDBFrame extends JFrame {
 	@Override
 	public void setDefaultCloseOperation(int arg0) {
 		// TODO Auto-generated method stub
-		setVisible(false);;
+		setVisible(false);
 	}
 
 }

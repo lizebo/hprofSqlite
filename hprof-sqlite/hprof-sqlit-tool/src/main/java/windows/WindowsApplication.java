@@ -14,6 +14,8 @@ import javax.swing.JButton;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.BufferedInputStream;
@@ -31,6 +33,8 @@ import com.whaley.hprof.sqlitemanager.SqliteManager;
 
 import javax.swing.JPanel;
 import javax.swing.Box;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 public class WindowsApplication {
 
@@ -38,6 +42,7 @@ public class WindowsApplication {
 	private File origin;
 	private LoadFileFrame loadFileFrame;
 	private LoadDBFrame loadDBFrame;
+	private ResultFrame resultFrame;
 	private CreateHprofFrame createHprofFrame;
 
 	/**
@@ -68,12 +73,14 @@ public class WindowsApplication {
 	 */
 	private void initialize() {
 		frame = new JFrame();
+
 		frame.setBounds(100, 100, 450, 300);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
 		loadFileFrame = new LoadFileFrame();
 		createHprofFrame = new CreateHprofFrame();
 		loadDBFrame = new LoadDBFrame();
+		resultFrame = new ResultFrame();
 		JFileChooser fileChooser = new JFileChooser();
 		
 		JButton btnNewButton = new JButton("\u8F7D\u5165\u6587\u4EF6");
@@ -115,6 +122,16 @@ public class WindowsApplication {
 		btnNewButton_1.setBounds(150, 102, 135, 23);
 		frame.getContentPane().add(btnNewButton_1);
 		
+		JButton button_1 = new JButton("\u67E5\u770B\u7ED3\u679C");
+		button_1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				resultFrame.setVisible(true);
+			}
+		});
+		button_1.setEnabled(false);
+		button_1.setBounds(305, 210, 93, 23);
+		frame.getContentPane().add(button_1);
+		
 		button.addActionListener(new ActionListener() {
 			
 			@Override
@@ -123,5 +140,34 @@ public class WindowsApplication {
 				loadDBFrame.setVisible(true);
 			}
 		});
+		frame.addFocusListener(new FocusListener() {
+			
+			@Override
+			public void focusLost(FocusEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void focusGained(FocusEvent e) {
+				// TODO Auto-generated method stub
+				if (SqliteManager.getInstance().hasConnect()) {
+					button_1.setEnabled(true);
+				}else {
+					button_1.setEnabled(false);
+				}
+			}
+		});
+		frame.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowActivated(WindowEvent arg0) {
+				if (SqliteManager.getInstance().hasConnect()) {
+					button_1.setEnabled(true);
+				}else {
+					button_1.setEnabled(false);
+				}
+			}
+		});
 	}
+	
 }
