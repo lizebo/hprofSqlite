@@ -3,6 +3,7 @@ package windows;
 import java.awt.BorderLayout;
 import java.awt.EventQueue;
 import java.awt.HeadlessException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 
 import javax.swing.BoxLayout;
@@ -18,8 +19,12 @@ import com.whaley.hprof.sqlitemanager.SqliteManager;
 import javax.swing.JTree;
 import javax.swing.JTextField;
 import javax.swing.JButton;
+
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+
+import javax.swing.JScrollPane;
+import javax.swing.ScrollPaneConstants;
 
 public class ResultFrame extends JFrame {
 
@@ -35,6 +40,9 @@ public class ResultFrame extends JFrame {
 	private JTextField textField_7;
 	private JTextField textField_8;
 	private JTextField textField_9;
+	private JScrollPane scrollPane_1;
+	private JTree tree_2;
+	private JTree tree_3;
 
 	/**
 	 * Launch the application.
@@ -84,7 +92,7 @@ public class ResultFrame extends JFrame {
 		
 		textField_1 = new JTextField();
 		textField_1.setEditable(false);
-		textField_1.setBounds(126, 10, 66, 21);
+		textField_1.setBounds(126, 10, 119, 21);
 		contentPane.add(textField_1);
 		textField_1.setColumns(10);
 		
@@ -97,7 +105,7 @@ public class ResultFrame extends JFrame {
 		
 		textField_3 = new JTextField();
 		textField_3.setEditable(false);
-		textField_3.setBounds(143, 168, 66, 21);
+		textField_3.setBounds(143, 168, 102, 21);
 		contentPane.add(textField_3);
 		textField_3.setColumns(10);
 		
@@ -110,7 +118,7 @@ public class ResultFrame extends JFrame {
 		
 		textField_5 = new JTextField();
 		textField_5.setEditable(false);
-		textField_5.setBounds(143, 358, 66, 21);
+		textField_5.setBounds(143, 358, 102, 21);
 		contentPane.add(textField_5);
 		textField_5.setColumns(10);
 		
@@ -123,7 +131,7 @@ public class ResultFrame extends JFrame {
 		
 		textField_7 = new JTextField();
 		textField_7.setEditable(false);
-		textField_7.setBounds(341, 168, 66, 21);
+		textField_7.setBounds(341, 168, 129, 21);
 		contentPane.add(textField_7);
 		textField_7.setColumns(10);
 		
@@ -135,32 +143,54 @@ public class ResultFrame extends JFrame {
 		textField_8.setColumns(10);
 		
 		textField_9 = new JTextField();
-		textField_9.setBounds(341, 358, 66, 21);
+		textField_9.setEditable(false);
+		textField_9.setBounds(341, 358, 129, 21);
 		contentPane.add(textField_9);
 		textField_9.setColumns(10);
 		
 		JButton btnNewButton = new JButton("\u67E5\u627E\u7C7B\u4FE1\u606F");
 		btnNewButton.setBounds(278, 404, 93, 23);
 		contentPane.add(btnNewButton);
+		
+		JScrollPane scrollPane = new JScrollPane();
+		scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+		scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		scrollPane.setBounds(53, 42, 471, 103);
+		contentPane.add(scrollPane);
+		
+		
+		scrollPane_1 = new JScrollPane();
+		scrollPane_1.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+		scrollPane_1.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		scrollPane_1.setBounds(53, 214, 471, 120);
+		contentPane.add(scrollPane_1);
+		
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowActivated(WindowEvent e) {
 
 				double totalSize = SqliteManager.getInstance().getTotalSize();
 
-				textField_1.setText(totalSize+"byte");
+				textField_1.setText((int)totalSize+"byte");
 				ArrayList<InstanceTraceItem> items = SqliteManager.getInstance().findHeapMax();
 				textField_3.setText(items.get(0).getLength()+"byte");
-				textField_7.setText(items.get(0).getLength()/totalSize*100 +"%");
+				float percent = (float) (items.get(0).getLength()/totalSize);
+				DecimalFormat format = new DecimalFormat();
+				format.applyPattern("0.00");
+				textField_7.setText(format.format(percent*100)+"%");
 				textField_5.setText(items.get(1).getLength()+"byte");
-				textField_9.setText(items.get(1).getLength()/totalSize*100 +"%");
+				float percent1 = (float) (items.get(1).getLength()/totalSize);
+				
+				textField_9.setText(format.format(percent1*100)+"%");
 				JTree tree = new JTree(items.get(0));
-				tree.setBounds(43, 37, 572, 121);
-				contentPane.add(tree);
+//				tree.set
+				scrollPane.setViewportView(tree);
+				scrollPane.invalidate();
+				
 				
 				JTree tree_1 = new JTree(items.get(1));
-				tree_1.setBounds(43, 216, 572, 121);
-				contentPane.add(tree_1);
+				scrollPane_1.setViewportView(tree_1);
+				scrollPane_1.invalidate();
 			}
 		});
 

@@ -108,6 +108,9 @@ public class InstanceTraceItem implements TreeNode{
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub
+		if (length>0) {
+			return name+" size:"+length+"byte";
+		}
 		return name;
 	}
 }

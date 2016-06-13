@@ -84,7 +84,7 @@ e:                SqliteManager.getInstance().insertData(Tag.STRING,string);
                 System.out.print("HEAP_DUMP");
             case Tag.HEAP_DUMP_SEGMENT: {
                 int id = UUID.randomUUID().hashCode();
-                SqliteManager.getInstance().insertHeapData(id,length);
+//                SqliteManager.getInstance().insertHeapData(id,length);
                 HeapDumpReader heapReader = new HeapDumpReader(reader.getInputStream(), length, heapDumpProcessor,id);
                 while (heapReader.hasNext()) {
                     heapReader.next();
