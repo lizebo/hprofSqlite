@@ -25,6 +25,8 @@ import java.awt.event.WindowEvent;
 
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
 
 public class ResultFrame extends JFrame {
 
@@ -43,6 +45,8 @@ public class ResultFrame extends JFrame {
 	private JScrollPane scrollPane_1;
 	private JTree tree_2;
 	private JTree tree_3;
+	
+	private SearchFrame searchFrame;
 
 	/**
 	 * Launch the application.
@@ -77,6 +81,8 @@ public class ResultFrame extends JFrame {
 	}
 	
 	private void init(){
+		searchFrame = new SearchFrame();
+		
 		setBounds(100, 100, 670, 475);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -149,6 +155,12 @@ public class ResultFrame extends JFrame {
 		textField_9.setColumns(10);
 		
 		JButton btnNewButton = new JButton("\u67E5\u627E\u7C7B\u4FE1\u606F");
+		btnNewButton.setEnabled(false);
+		btnNewButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				searchFrame.setVisible(true);
+			}
+		});
 		btnNewButton.setBounds(278, 404, 93, 23);
 		contentPane.add(btnNewButton);
 		
@@ -191,6 +203,7 @@ public class ResultFrame extends JFrame {
 				JTree tree_1 = new JTree(items.get(1));
 				scrollPane_1.setViewportView(tree_1);
 				scrollPane_1.invalidate();
+				btnNewButton.setEnabled(true);
 			}
 		});
 

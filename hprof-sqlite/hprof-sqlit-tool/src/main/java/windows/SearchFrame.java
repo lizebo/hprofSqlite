@@ -22,6 +22,7 @@ import com.whaley.hprof.sqlitemanager.SqliteManager;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
+import javax.swing.ListSelectionModel;
 
 public class SearchFrame extends JFrame {
 
@@ -48,7 +49,6 @@ public class SearchFrame extends JFrame {
 	 * Create the frame.
 	 */
 	public SearchFrame() {
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 504, 427);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -63,6 +63,7 @@ public class SearchFrame extends JFrame {
 		JScrollPane scrollPane = new JScrollPane();
 		scrollPane.setBounds(42, 41, 165, 317);
 		contentPane.add(scrollPane);
+		
 
 		JScrollPane scrollPane_1 = new JScrollPane();
 		scrollPane_1.setBounds(217, 41, 261, 317);
@@ -83,19 +84,24 @@ public class SearchFrame extends JFrame {
 				}
 				JList list = new JList(model);
 				scrollPane.setViewportView(list);
+				list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 				list.addListSelectionListener(new ListSelectionListener() {
 
 					@Override
 					public void valueChanged(ListSelectionEvent e) {
 						// TODO Auto-generated method stub
-						int id = (int) list.getSelectedValue();
-						int length = SqliteManager.getInstance()
-								.findLengthById(id, new ArrayList<Integer>());
-						InstanceTraceItem item = SqliteManager.getInstance()
-								.getInstanceTraceItem(id,
-										new ArrayList<Integer>(), length);
-						JTree tree = new JTree(item);
-						scrollPane_1.setViewportView(tree);
+						synchronized (this) {
+							System.out.print("valuechange");
+							int id = (int) list.getSelectedValue();
+							int length = SqliteManager.getInstance()
+									.findLengthById(id, new ArrayList<Integer>());
+							InstanceTraceItem item = SqliteManager.getInstance()
+									.getInstanceTraceItem(id,
+											new ArrayList<Integer>(), length);
+							JTree tree = new JTree(item);
+							scrollPane_1.setViewportView(tree);
+							scrollPane_1.invalidate();
+						}
 					}
 				});
 			}

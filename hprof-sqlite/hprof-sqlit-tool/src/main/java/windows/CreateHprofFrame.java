@@ -56,7 +56,6 @@ public class CreateHprofFrame extends JFrame {
 	 * Create the frame.
 	 */
 	public CreateHprofFrame() {
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
 		init();
 
@@ -137,11 +136,5 @@ public class CreateHprofFrame extends JFrame {
 				setVisible(false);
 			}
 		});
-	}
-
-	@Override
-	public void setDefaultCloseOperation(int operation) {
-		// TODO Auto-generated method stub
-		this.setVisible(false);
 	}
 }
