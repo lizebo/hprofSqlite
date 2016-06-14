@@ -114,7 +114,7 @@ public class CreateHprofFrame extends JFrame {
 				// TODO Auto-generated method stub
 				fileChooser.showOpenDialog(CreateHprofFrame.this);
 				hprofPath = fileChooser.getSelectedFile().getAbsolutePath();
-				textField_4.setText(hprofPath);
+				textField_4.setText(hprofPath+"\\"+"test.hprof");
 				System.out.print(hprofPath);
 			}
 		});

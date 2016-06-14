@@ -53,7 +53,6 @@ public class LoadFileFrame extends JFrame {
 	 * Create the frame.
 	 */
 	public LoadFileFrame() {
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -136,17 +135,11 @@ public class LoadFileFrame extends JFrame {
 		btnNewButton_2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				fileChooser1.showOpenDialog(LoadFileFrame.this);
-				textField_3.setText(fileChooser1.getSelectedFile().getAbsolutePath()+"\\hprof.db");
+				textField_3.setText(fileChooser1.getSelectedFile().getAbsolutePath()+"\\hprof");
 			}
 		});
 		btnNewButton_2.setBounds(320, 136, 32, 23);
 		contentPane.add(btnNewButton_2);
-	}
-
-	@Override
-	public void setDefaultCloseOperation(int operation) {
-		// TODO Auto-generated method stub
-		this.setVisible(false);
 	}
 	
 }

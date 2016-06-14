@@ -8,8 +8,10 @@ import com.sun.org.apache.regexp.internal.recompile;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by hc on 2016/5/20.
@@ -18,6 +20,8 @@ public class SqliteManager {
 	private static SqliteManager instance = null;
 	Connection conn = null;
 	private int totalSize = 0;
+	private IndexHashMap indexValueToId;
+	private HashMap<Integer, String> indexClassName;
 
 	private HashMap<Integer, List<InstanceField>> classFiled;
 	// private ArrayList<Integer> traceIds;
@@ -31,6 +35,8 @@ public class SqliteManager {
 		classConstantFiled = new HashMap<Integer, List<ConstantField>>();
 		classStaticFiled = new HashMap<Integer, List<StaticField>>();
 		classLength = new HashMap<Integer, Integer>();
+		indexValueToId = new IndexHashMap();
+		indexClassName = new HashMap<Integer, String>();
 	}
 
 	private static synchronized void syncInit() {
@@ -126,19 +132,36 @@ public class SqliteManager {
 					if (type == 2) {
 						int value = Utils.byteArrayToInt(
 								staticField.getValue(), i);
+						int id = staticField.getFieldNameId();
+
+						PreparedStatement stringStatement = conn
+								.prepareStatement(new StringBuilder("select * from ")
+										.append(SQLDOMAIN.TABLE_STRING)
+										.append(" where id=")
+										.append(id).append(";")
+										.toString());
+						ResultSet stringSet = stringStatement.executeQuery();
+						String fieldName = null;
+						if (stringSet.next()) {
+							fieldName = stringSet.getString("value");
+						}
+						stringStatement.close();
+						stringSet.close();
 						if (value != 0) {
 							PreparedStatement statement = conn
 									.prepareStatement(new StringBuilder(
 											"insert into ")
 											.append(SQLDOMAIN.INDEW_CLASS_CONS_STATIC_FIELD)
-											.append(" (class_id,type,value) values (")
+											.append(" (class_id,type,value,field_name) values (")
 											.append(temp.getObjectId())
 											.append(",").append(type)
-											.append(",").append("?")
+											.append(",").append("?").append(",").append("?")
 											.append(");").toString());
 							statement.setInt(1, value);
+							statement.setString(2, fieldName);
 							statement.executeUpdate();
 							statement.close();
+							indexValueToId.put(value,temp.getObjectId(),fieldName);
 						} else {
 							cl += staticField.getValue().length;
 						}
@@ -148,6 +171,7 @@ public class SqliteManager {
 				if (rs.getString("value").equals(
 						"java.lang.ref.FinalizerReference"))
 					finizeId = temp.getObjectId();
+				indexClassName.put(temp.getObjectId(), rs.getString("value"));
 				buffer.append("insert into ").append(SQLDOMAIN.TABLE_CLASS)
 						.append(" values (").append(temp.getObjectId())
 						.append(",").append("'").append(rs.getString("value"))
@@ -174,13 +198,30 @@ public class SqliteManager {
 				Iterator<InstanceField> iterator2 = list1.iterator();
 				ArrayList types = new ArrayList();
 				ArrayList sizes = new ArrayList();
+				ArrayList fieldNames = new ArrayList();
 				while (iterator2.hasNext()) {
-					BasicType type = iterator2.next().getType();
+					InstanceField field = iterator2.next();
+					BasicType type = field.getType();
 					types.add(type.type);
 					sizes.add(type.size);
+					int id = field.getFieldNameId();
+
+					PreparedStatement stringStatement = conn
+							.prepareStatement(new StringBuilder("select * from ")
+									.append(SQLDOMAIN.TABLE_STRING)
+									.append(" where id=")
+									.append(id).append(";")
+									.toString());
+					ResultSet stringSet = stringStatement.executeQuery();
+					if (stringSet.next()) {
+						fieldNames.add(stringSet.getString("value"));
+					}
+					stringStatement.close();
+					stringSet.close();
 				}
 				Iterator iterator = types.iterator();
 				Iterator iterator1 = sizes.iterator();
+				Iterator nameIterator = fieldNames.iterator();
 				byte[] bytes = instance.getInstanceFieldData();
 				i = 0;
 				while (i < bytes.length && iterator.hasNext()) {
@@ -189,6 +230,7 @@ public class SqliteManager {
 					}
 					int type = (Integer) iterator.next();
 					int size = (Integer) iterator1.next();
+					String fieldName = (String) nameIterator.next();
 					if (type == 2) {
 						int value = Utils.byteArrayToInt(bytes, i);
 						if (value != 0) {
@@ -196,12 +238,13 @@ public class SqliteManager {
 									.prepareStatement(new StringBuilder(
 											"insert into ")
 											.append(SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD)
-											.append(" (instance_id,type,value) values (")
+											.append(" (instance_id,type,value,field_name) values (")
 											.append(instance.getObjectId())
 											.append(",").append(type)
-											.append(",").append("?")
+											.append(",").append("?").append(",").append("?")
 											.append(");").toString());
 							statement.setInt(1, value);
+							statement.setString(2, fieldName);
 							statement.executeUpdate();
 							statement.close();
 							// }
@@ -289,6 +332,24 @@ public class SqliteManager {
 			String conName = "jdbc:sqlite:" + dbName;
 			conn = DriverManager.getConnection(conName);
 			conn.setAutoCommit(false);
+			PreparedStatement indexStatement = conn.prepareStatement("select * from "+SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD);
+			ResultSet set = indexStatement.executeQuery();
+			while (set.next()) {
+				System.out.print("connect");
+				int key = set.getInt("value");
+				int value = set.getInt("instance_id");
+				String fieldName = set.getString("field_name");
+				indexValueToId.put(key, value,fieldName);
+			}
+			PreparedStatement classStatement = conn.prepareStatement("select * from "+SQLDOMAIN.TABLE_CLASS);
+			ResultSet classResultSet = classStatement.executeQuery();
+			while (classResultSet.next()) {
+				indexClassName.put(classResultSet.getInt("id"), classResultSet.getString("name"));				
+			}
+			indexStatement.close();
+			set.close();
+			classResultSet.close();
+			classStatement.close();
 		} catch (ClassNotFoundException | SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -378,7 +439,7 @@ public class SqliteManager {
 			PreparedStatement createInstanceField = conn
 					.prepareStatement("create table "
 							+ SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD
-							+ "(instance_id int, type int,value)");
+							+ "(instance_id int, type int,value,field_name)");
 			createInstanceField.executeUpdate();
 			createInstanceField.close();
 			PreparedStatement dropClassFiled = conn
@@ -389,7 +450,7 @@ public class SqliteManager {
 			PreparedStatement createClassField = conn
 					.prepareStatement("create table "
 							+ SQLDOMAIN.INDEW_CLASS_CONS_STATIC_FIELD
-							+ "(class_id int, type int,value)");
+							+ "(class_id int, type int,value,field_name)");
 			createClassField.executeUpdate();
 			createClassField.close();
 			conn.commit();
@@ -425,6 +486,9 @@ public class SqliteManager {
 				if (item != null) {
 					items.add(item);
 				}
+				if (items.size()>=2) {
+					break;
+				}
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -443,14 +507,20 @@ public class SqliteManager {
 			while (instanceSet.next()) {
 				hasData = true;
 				int class_id = instanceSet.getInt("class_id");
-				PreparedStatement classState = conn
-						.prepareStatement("select name from "
-								+ SQLDOMAIN.TABLE_CLASS + " where id = "
-								+ class_id);
-				ResultSet resultSet = classState.executeQuery();
-				while (resultSet.next()) {
-					return resultSet.getString("name");
-				}
+				return getClassNameForClass(class_id);
+//				if (indexClassName.containsKey(class_id)) {
+//					return indexClassName.get(class_id);
+//				}else {
+//					PreparedStatement classState = conn
+//							.prepareStatement("select name from "
+//									+ SQLDOMAIN.TABLE_CLASS + " where id = "
+//									+ class_id);
+//					ResultSet resultSet = classState.executeQuery();
+//					while (resultSet.next()) {
+//						return resultSet.getString("name");
+//					}
+//				}
+
 			}
 			if (!hasData) {
 				PreparedStatement objArrState = conn
@@ -461,14 +531,15 @@ public class SqliteManager {
 				while (resultset.next()) {
 					hasData = true;
 					int class_id = resultset.getInt("element_class_id");
-					PreparedStatement classState = conn
-							.prepareStatement("select name from "
-									+ SQLDOMAIN.TABLE_CLASS + " where id = "
-									+ class_id);
-					ResultSet resultSet = classState.executeQuery();
-					while (resultSet.next()) {
-						return resultSet.getString("name");
-					}
+					return getClassNameForClass(class_id);
+//					PreparedStatement classState = conn
+//							.prepareStatement("select name from "
+//									+ SQLDOMAIN.TABLE_CLASS + " where id = "
+//									+ class_id);
+//					ResultSet resultSet = classState.executeQuery();
+//					while (resultSet.next()) {
+//						return resultSet.getString("name");
+//					}
 				}
 			}
 			if (!hasData) {
@@ -514,6 +585,9 @@ public class SqliteManager {
 
 	String getClassNameForClass(int class_id) {
 		try {
+			if (indexClassName!=null&&indexClassName.size()>0&&indexClassName.containsKey(class_id)) {
+				return indexClassName.get(class_id);
+			}
 			PreparedStatement classState = conn
 					.prepareStatement("select name from "
 							+ SQLDOMAIN.TABLE_CLASS + " where id = " + class_id);
@@ -539,29 +613,54 @@ public class SqliteManager {
 		traceIds.add(id);
 		try {
 			boolean hasData = false;
-			PreparedStatement state = conn
-					.prepareStatement("select instance_id from "
-							+ SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD
-							+ " where value = " + id);
-			ResultSet set = state.executeQuery();
-			while (set.next()) {
-				hasData = true;
-				int temp_id = set.getInt("instance_id");
-				String name = getClassNameForInstance(id);
-				if (name != null) {
-					if (name.equals("java.lang.ref.FinalizerReference")) {
-						return null;
-					}
-					traceItem.setName(name);
-					InstanceTraceItem temp = getInstanceTraceItem(temp_id,
-							traceIds,length);
-					if (temp != null) {
-						traceItem.addTrace(temp);
-						;
+			if (indexValueToId.size()>0) {
+				HashMap<Integer,String> item = indexValueToId.get(id);
+				if (item!=null&&item.size()>0) {
+					hasData = true;
+					Iterator iterator = item.entrySet().iterator();
+					while (iterator.hasNext()) {
+						Map.Entry entry = (Map.Entry) iterator.next();
+						int temp_id = (int) entry.getKey();
+						traceItem.setFieldName((String)entry.getValue());
+						String name = getClassNameForInstance(id);
+						if (name != null) {
+							if (name.equals("java.lang.ref.FinalizerReference")) {
+								return null;
+							}
+							traceItem.setName(name);
+							InstanceTraceItem temp = getInstanceTraceItem(temp_id,
+									traceIds,length);
+							if (temp != null) {
+								traceItem.addTrace(temp);								
+							}
+						}
 					}
 				}
+			}else {
+				PreparedStatement state = conn
+						.prepareStatement("select instance_id from "
+								+ SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD
+								+ " where value = " + id);
+				ResultSet set = state.executeQuery();
+				while (set.next()) {
+					hasData = true;
+					int temp_id = set.getInt("instance_id");
+					String name = getClassNameForInstance(id);
+					if (name != null) {
+						if (name.equals("java.lang.ref.FinalizerReference")) {
+							return null;
+						}
+						traceItem.setName(name);
+						InstanceTraceItem temp = getInstanceTraceItem(temp_id,
+								traceIds,length);
+						if (temp != null) {
+							traceItem.addTrace(temp);							
+						}
+					}
 
+				}
 			}
+
 			if (!hasData) {
 				PreparedStatement statement = conn
 						.prepareStatement("select id from "
@@ -598,6 +697,7 @@ public class SqliteManager {
 						String className = getClassNameForClass(classSet
 								.getInt("class_id"));
 						traceItem.setName(className);
+						traceItem.setFieldName(classSet.getString("field_name"));
 					}
 					classSet.close();
 					classState.close();
@@ -610,9 +710,10 @@ public class SqliteManager {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		if (traceItem.getName() != null)
+		if (traceItem.getName() != null){
+//			System.out.print(traceItem.getName()+traceItem.getLength()+"\n");
 			return traceItem;
-
+		}
 		return null;
 	}
 

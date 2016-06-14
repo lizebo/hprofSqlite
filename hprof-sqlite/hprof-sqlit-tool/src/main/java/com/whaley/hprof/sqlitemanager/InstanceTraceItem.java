@@ -13,9 +13,18 @@ public class InstanceTraceItem implements TreeNode{
     private int id;
     private String name;
     private int length;
+    private String fieldName;
     private ArrayList<InstanceTraceItem> traceItems;
 
-    public int getLength() {
+    public String getFieldName() {
+		return fieldName;
+	}
+
+	public void setFieldName(String fieldName) {
+		this.fieldName = fieldName;
+	}
+
+	public int getLength() {
 		return length;
 	}
 
@@ -109,8 +118,12 @@ public class InstanceTraceItem implements TreeNode{
 	public String toString() {
 		// TODO Auto-generated method stub
 		if (length>0) {
+			if (fieldName!=null) {
+				return name+"["+fieldName+"]"+" size:"+length+"byte";
+			}
 			return name+" size:"+length+"byte";
 		}
+
 		return name;
 	}
 }

@@ -41,7 +41,6 @@ public class LoadDBFrame extends JFrame {
 	 * Create the frame.
 	 */
 	public LoadDBFrame() {
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -83,12 +82,6 @@ public class LoadDBFrame extends JFrame {
 		});
 		button_1.setBounds(168, 164, 93, 23);
 		contentPane.add(button_1);
-	}
-
-	@Override
-	public void setDefaultCloseOperation(int arg0) {
-		// TODO Auto-generated method stub
-		setVisible(false);
 	}
 
 }
