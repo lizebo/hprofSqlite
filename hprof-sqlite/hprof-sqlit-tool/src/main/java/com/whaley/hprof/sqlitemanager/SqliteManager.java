@@ -52,6 +52,10 @@ public class SqliteManager {
 		return instance;
 	}
 
+	/**
+	 * @param tag
+	 * @param obj
+	 */
 	public void insertData(int tag, Record obj) {
 		StringBuilder buffer = new StringBuilder();
 		PreparedStatement insertState = null;
@@ -247,6 +251,7 @@ public class SqliteManager {
 							statement.setString(2, fieldName);
 							statement.executeUpdate();
 							statement.close();
+							indexValueToId.put(value,instance.getObjectId(),fieldName);
 							// }
 						}
 					} else {
@@ -318,6 +323,9 @@ public class SqliteManager {
 		super.finalize();
 	}
 
+	/**
+	 * 
+	 */
 	public void commit() {
 		try {
 			conn.commit();
@@ -326,6 +334,9 @@ public class SqliteManager {
 		}
 	}
 
+	/**
+	 * @param dbName
+	 */
 	public void connect(String dbName) {
 		try {
 			Class.forName("org.sqlite.JDBC");
@@ -358,6 +369,9 @@ public class SqliteManager {
 
 	}
 
+	/**
+	 * @param dbName
+	 */
 	public void createTables(String dbName) {
 		try {
 			Class.forName("org.sqlite.JDBC");
@@ -467,10 +481,16 @@ public class SqliteManager {
 		}
 	}
 
+	/**
+	 * @return
+	 */
 	public boolean hasConnect() {
 		return conn != null;
 	}
 
+	/**
+	 * @return
+	 */
 	public ArrayList<InstanceTraceItem> findHeapMax() {
 		ArrayList<InstanceTraceItem> items = new ArrayList<InstanceTraceItem>();
 		try {
@@ -496,6 +516,10 @@ public class SqliteManager {
 		return items;
 	}
 
+	/**
+	 * @param instance_id
+	 * @return
+	 */
 	String getClassNameForInstance(int instance_id) {
 		try {
 			boolean hasData = false;
@@ -559,6 +583,10 @@ public class SqliteManager {
 		return null;
 	}
 
+	/**
+	 * @param name
+	 * @return
+	 */
 	public List getInstanceForClass(String name) {
 		ArrayList list = new ArrayList();
 		try {
@@ -583,6 +611,10 @@ public class SqliteManager {
 		return list;
 	}
 
+	/**
+	 * @param class_id
+	 * @return
+	 */
 	String getClassNameForClass(int class_id) {
 		try {
 			if (indexClassName!=null&&indexClassName.size()>0&&indexClassName.containsKey(class_id)) {
@@ -602,6 +634,12 @@ public class SqliteManager {
 		return null;
 	}
 
+	/**
+	 * @param id
+	 * @param traceIds
+	 * @param originLength
+	 * @return
+	 */
 	public InstanceTraceItem getInstanceTraceItem(int id, ArrayList<Integer> traceIds,int originLength) {
 		InstanceTraceItem traceItem = new InstanceTraceItem();
 		traceItem.setId(id);
@@ -717,6 +755,10 @@ public class SqliteManager {
 		return null;
 	}
 
+	/**
+	 * @param classId
+	 * @return
+	 */
 	private int getClassLength(int classId) {
 		int length = 0;
 		try {
@@ -747,6 +789,9 @@ public class SqliteManager {
 		return length;
 	}
 
+	/**
+	 * 
+	 */
 	public void initClassLength() {
 		PreparedStatement classInfo = null;
 		try {
@@ -762,6 +807,9 @@ public class SqliteManager {
 		}
 	}
 
+	/**
+	 * @return 
+	 */
 	public double getTotalSize() {
 		if (totalSize > 0) {
 			return totalSize;
@@ -875,6 +923,11 @@ public class SqliteManager {
 		return length;
 	}
 
+	/**
+	 * @param classId
+	 * @param traceIds
+	 * @return
+	 */
 	public int findLengthById(int classId, List<Integer> traceIds) {
 		int length = 0;
 		traceIds.add(classId);
@@ -998,6 +1051,12 @@ public class SqliteManager {
 		return length;
 	}
 
+	/**
+	 * @param classId
+	 * @param traceIds
+	 * @param originLength
+	 * @return
+	 */
 	private int findLengthById(int classId, List<Integer> traceIds,
 			int originLength) {
 		int length = originLength;

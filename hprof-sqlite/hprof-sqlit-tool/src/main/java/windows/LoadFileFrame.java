@@ -21,6 +21,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 public class LoadFileFrame extends JFrame {
 
@@ -32,6 +34,8 @@ public class LoadFileFrame extends JFrame {
 	
 	private File soureFile;
 	private JButton btnNewButton_2;
+	
+	public boolean needRefresh = false;
 
 	/**
 	 * Launch the application.
@@ -53,6 +57,13 @@ public class LoadFileFrame extends JFrame {
 	 * Create the frame.
 	 */
 	public LoadFileFrame() {
+		addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				textField_1.setText("");
+				textField_3.setText("");
+			}
+		});
 		setBounds(100, 100, 450, 300);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -113,6 +124,9 @@ public class LoadFileFrame extends JFrame {
 			            SqliteManager.getInstance().initClassLength();
 			            SqliteManager.getInstance().getTotalSize();
 			            SqliteManager.getInstance().commit();
+			            needRefresh = true;
+						textField_1.setText("");
+						textField_3.setText("");
 			            setVisible(false);
 					} catch (FileNotFoundException e1) {
 						// TODO Auto-generated catch block

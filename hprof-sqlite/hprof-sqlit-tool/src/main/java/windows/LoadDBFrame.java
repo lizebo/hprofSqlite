@@ -13,6 +13,8 @@ import com.whaley.hprof.sqlitemanager.SqliteManager;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 public class LoadDBFrame extends JFrame {
 
@@ -20,6 +22,7 @@ public class LoadDBFrame extends JFrame {
 	private JTextField txtDb;
 	private JTextField textField_1;
 	private JButton button_1;
+	public boolean needRefresh = false;
 
 	/**
 	 * Launch the application.
@@ -41,6 +44,13 @@ public class LoadDBFrame extends JFrame {
 	 * Create the frame.
 	 */
 	public LoadDBFrame() {
+		addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				textField_1.setText("");
+			}
+		});
+//		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -75,6 +85,8 @@ public class LoadDBFrame extends JFrame {
 				String dbName = fileChooser.getSelectedFile().getAbsolutePath();
 				if (dbName!=null) {
 					SqliteManager.getInstance().connect(dbName);
+					needRefresh = true;
+					textField_1.setText("");
 					setVisible(false);
 
 				}
@@ -82,6 +94,13 @@ public class LoadDBFrame extends JFrame {
 		});
 		button_1.setBounds(168, 164, 93, 23);
 		contentPane.add(button_1);
+	}
+
+	@Override
+	public void setDefaultCloseOperation(int arg0) {
+		// TODO Auto-generated method stub
+		System.out.print("close");
+		super.setDefaultCloseOperation(arg0);
 	}
 
 }

@@ -33,6 +33,7 @@ import com.whaley.hprof.sqlitemanager.SqliteManager;
 
 import javax.swing.JPanel;
 import javax.swing.Box;
+
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
@@ -125,7 +126,13 @@ public class WindowsApplication {
 		JButton button_1 = new JButton("\u67E5\u770B\u7ED3\u679C");
 		button_1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+//				resultFrame
+				if (loadDBFrame.needRefresh||loadFileFrame.needRefresh) {
+					resultFrame.clearData();
+				}
 				resultFrame.setVisible(true);
+				loadDBFrame.needRefresh = false;
+				loadFileFrame.needRefresh = false;
 			}
 		});
 		button_1.setEnabled(false);
