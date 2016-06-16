@@ -8,26 +8,48 @@ import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
 import javax.swing.DefaultListModel;
+import javax.swing.JFileChooser;
 import javax.swing.JTextField;
 import javax.swing.JButton;
 import javax.swing.JList;
 import javax.swing.JTree;
 import javax.swing.JScrollPane;
 
+import com.sun.corba.se.impl.javax.rmi.CORBA.Util;
 import com.sun.media.sound.ModelAbstractChannelMixer;
 import com.whaley.hprof.sqlitemanager.InstanceTraceItem;
 import com.whaley.hprof.sqlitemanager.SqliteManager;
+import com.whaley.hprof.sqlitemanager.Utils;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
+import java.util.Iterator;
+
 import javax.swing.ListSelectionModel;
+
+import java.awt.GridBagLayout;
+import java.awt.GridBagConstraints;
+import java.awt.Insets;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 
 public class SearchFrame extends JFrame {
 
 	private JPanel contentPane;
 	private JTextField textField;
+	private ArrayList<String> classList;
+	private JTextField textField_1;
+
+	// private JFileChooser mChooser;
 
 	/**
 	 * Launch the application.
@@ -50,28 +72,96 @@ public class SearchFrame extends JFrame {
 	 */
 	public SearchFrame() {
 		setBounds(100, 100, 504, 427);
+		// mChooser = new JFileChooser();
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
-		contentPane.setLayout(null);
+		GridBagLayout gbl_contentPane = new GridBagLayout();
+		gbl_contentPane.columnWidths = new int[] { 165, 103, 34, 93 };
+		gbl_contentPane.rowHeights = new int[] { 23, 26, 288 };
+		gbl_contentPane.columnWeights = new double[] { 0.0, 0.0, 0.0, 0.0 };
+		gbl_contentPane.rowWeights = new double[] { 0.0, 0.0, 0.0 };
+		contentPane.setLayout(gbl_contentPane);
 
 		textField = new JTextField();
-		textField.setBounds(42, 10, 316, 21);
-		contentPane.add(textField);
+		GridBagConstraints gbc_textField = new GridBagConstraints();
+		gbc_textField.weightx = 1.0;
+		gbc_textField.fill = GridBagConstraints.HORIZONTAL;
+		gbc_textField.insets = new Insets(0, 0, 5, 5);
+		gbc_textField.gridwidth = 3;
+		gbc_textField.gridx = 0;
+		gbc_textField.gridy = 0;
+		contentPane.add(textField, gbc_textField);
 		textField.setColumns(10);
 
+		JButton btnNewButton = new JButton("\u67E5\u627E");
+
+		GridBagConstraints gbc_btnNewButton = new GridBagConstraints();
+		gbc_btnNewButton.anchor = GridBagConstraints.NORTH;
+		gbc_btnNewButton.fill = GridBagConstraints.HORIZONTAL;
+		gbc_btnNewButton.insets = new Insets(0, 0, 5, 0);
+		gbc_btnNewButton.gridx = 3;
+		gbc_btnNewButton.gridy = 0;
+		contentPane.add(btnNewButton, gbc_btnNewButton);
+
+		textField_1 = new JTextField();
+		GridBagConstraints gbc_textField_1 = new GridBagConstraints();
+		gbc_textField_1.weightx = 1.0;
+		gbc_textField_1.anchor = GridBagConstraints.NORTH;
+		gbc_textField_1.fill = GridBagConstraints.HORIZONTAL;
+		gbc_textField_1.insets = new Insets(0, 0, 5, 5);
+		gbc_textField_1.gridwidth = 2;
+		gbc_textField_1.gridx = 0;
+		gbc_textField_1.gridy = 1;
+		contentPane.add(textField_1, gbc_textField_1);
+		textField_1.setColumns(10);
+
+		JButton btnNewButton_1 = new JButton("\u2026");
+		btnNewButton_1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				JFileChooser mChooser = new JFileChooser();
+				mChooser.showOpenDialog(contentPane);
+				textField_1.setText(mChooser.getSelectedFile()
+						.getAbsolutePath());
+			}
+		});
+		GridBagConstraints gbc_btnNewButton_1 = new GridBagConstraints();
+		gbc_btnNewButton_1.anchor = GridBagConstraints.SOUTH;
+		gbc_btnNewButton_1.fill = GridBagConstraints.HORIZONTAL;
+		gbc_btnNewButton_1.insets = new Insets(0, 0, 5, 5);
+		gbc_btnNewButton_1.gridx = 2;
+		gbc_btnNewButton_1.gridy = 1;
+		contentPane.add(btnNewButton_1, gbc_btnNewButton_1);
+
+		JButton button = new JButton("\u5206\u6790");
+
+		GridBagConstraints gbc_button = new GridBagConstraints();
+		gbc_button.anchor = GridBagConstraints.SOUTH;
+		gbc_button.fill = GridBagConstraints.HORIZONTAL;
+		gbc_button.insets = new Insets(0, 0, 5, 0);
+		gbc_button.gridx = 3;
+		gbc_button.gridy = 1;
+		contentPane.add(button, gbc_button);
+
 		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.setBounds(42, 41, 165, 317);
-		contentPane.add(scrollPane);
-		
+		GridBagConstraints gbc_scrollPane = new GridBagConstraints();
+		gbc_scrollPane.weighty = 1.0;
+		gbc_scrollPane.weightx = 1.0;
+		gbc_scrollPane.fill = GridBagConstraints.BOTH;
+		gbc_scrollPane.insets = new Insets(0, 0, 0, 5);
+		gbc_scrollPane.gridx = 0;
+		gbc_scrollPane.gridy = 2;
+		contentPane.add(scrollPane, gbc_scrollPane);
 
 		JScrollPane scrollPane_1 = new JScrollPane();
-		scrollPane_1.setBounds(217, 41, 261, 317);
-		contentPane.add(scrollPane_1);
-
-
-
-		JButton btnNewButton = new JButton("\u67E5\u627E");
+		GridBagConstraints gbc_scrollPane_1 = new GridBagConstraints();
+		gbc_scrollPane_1.weighty = 1.0;
+		gbc_scrollPane_1.weightx = 1.0;
+		gbc_scrollPane_1.fill = GridBagConstraints.BOTH;
+		gbc_scrollPane_1.gridwidth = 3;
+		gbc_scrollPane_1.gridx = 1;
+		gbc_scrollPane_1.gridy = 2;
+		contentPane.add(scrollPane_1, gbc_scrollPane_1);
 		btnNewButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				String className = textField.getText();
@@ -94,9 +184,10 @@ public class SearchFrame extends JFrame {
 							System.out.print("valuechange");
 							int id = (int) list.getSelectedValue();
 							int length = SqliteManager.getInstance()
-									.findLengthById(id, new ArrayList<Integer>());
-							InstanceTraceItem item = SqliteManager.getInstance()
-									.getInstanceTraceItem(id,
+									.findLengthById(id,
+											new ArrayList<Integer>());
+							InstanceTraceItem item = SqliteManager
+									.getInstance().getInstanceTraceItem(id,
 											new ArrayList<Integer>(), length);
 							JTree tree = new JTree(item);
 							scrollPane_1.setViewportView(tree);
@@ -106,7 +197,70 @@ public class SearchFrame extends JFrame {
 				});
 			}
 		});
-		btnNewButton.setBounds(385, 9, 93, 23);
-		contentPane.add(btnNewButton);
+		button.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				String path = textField_1.getText();
+				File file = new File(path);
+				try {
+					InputStream in = new BufferedInputStream(
+							new FileInputStream(file));
+					classList = Utils.convertStreamToString(in);
+					DefaultMutableTreeNode root = new DefaultMutableTreeNode(
+							"classs", true);
+					Iterator<String> iterator = classList.iterator();
+					while (iterator.hasNext()) {
+						String className = iterator.next();
+						DefaultMutableTreeNode node = new DefaultMutableTreeNode(
+								className, true);
+//						ArrayList<Integer> instances = (ArrayList<Integer>) SqliteManager
+//								.getInstance().getInstanceForClass(className);
+//						Iterator<Integer> iterator2 = instances.iterator();
+//						while (iterator2.hasNext()) {
+//							int id = iterator2.next();
+//							DefaultMutableTreeNode idNode = new DefaultMutableTreeNode(
+//									id);
+//							node.add(idNode);
+//						}
+						root.add(node);
+					}
+					JTree tree = new JTree(root);
+					scrollPane.setViewportView(tree);
+					tree.addTreeSelectionListener(new TreeSelectionListener() {
+
+						@Override
+						public void valueChanged(TreeSelectionEvent e) {
+							synchronized (this) {
+								// TODO Auto-generated method stub
+								DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree
+										.getLastSelectedPathComponent();
+
+								if (node == null)
+									return;
+								Object object = node.getUserObject();
+								if (node.isLeaf()) {
+
+									System.out.print("valuechange");
+									int id = (int) object;
+									int length = SqliteManager.getInstance()
+											.findLengthById(id,
+													new ArrayList<Integer>());
+									InstanceTraceItem item = SqliteManager
+											.getInstance()
+											.getInstanceTraceItem(id,
+													new ArrayList<Integer>(),
+													length);
+									JTree tree = new JTree(item);
+									scrollPane_1.setViewportView(tree);
+									scrollPane_1.invalidate();
+								}
+							}
+						}
+					});
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		});
 	}
 }

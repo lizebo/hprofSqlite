@@ -274,18 +274,6 @@ public class ResultFrame extends JFrame {
 			public void windowActivated(WindowEvent e) {
 				synchronized (this) {
 					if (items == null) {
-						// scrollPane.removev;
-						// scrollPane_1.removeAll();
-						// scrollPane.
-						// if (scrollPane.getViewport()) {
-						//
-						// }
-						// if (scrollPane.getViewport()!=null) {
-						// scrollPane.remove(scrollPane.getViewport());
-						// }
-						// if (scrollPane_1.getViewport()!=null) {
-						// scrollPane_1.remove(scrollPane_1.getViewport());
-						// }
 						double totalSize = SqliteManager.getInstance()
 								.getTotalSize();
 
