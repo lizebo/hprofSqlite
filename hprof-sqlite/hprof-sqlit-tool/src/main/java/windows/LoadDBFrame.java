@@ -6,6 +6,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.JTextField;
 import javax.swing.JButton;
 
@@ -69,6 +70,8 @@ public class LoadDBFrame extends JFrame {
 		contentPane.add(textField_1);
 		textField_1.setColumns(10);
 		JFileChooser fileChooser = new JFileChooser();
+		FileNameExtensionFilter fiter = new FileNameExtensionFilter("数据库文件", "db");
+		fileChooser.setFileFilter(fiter);
 		JButton button = new JButton("\u2026");
 		button.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {

@@ -205,57 +205,64 @@ public class SearchFrame extends JFrame {
 					InputStream in = new BufferedInputStream(
 							new FileInputStream(file));
 					classList = Utils.convertStreamToString(in);
-					DefaultMutableTreeNode root = new DefaultMutableTreeNode(
-							"classs", true);
-					Iterator<String> iterator = classList.iterator();
-					while (iterator.hasNext()) {
-						String className = iterator.next();
-						DefaultMutableTreeNode node = new DefaultMutableTreeNode(
-								className, true);
-//						ArrayList<Integer> instances = (ArrayList<Integer>) SqliteManager
-//								.getInstance().getInstanceForClass(className);
-//						Iterator<Integer> iterator2 = instances.iterator();
-//						while (iterator2.hasNext()) {
-//							int id = iterator2.next();
-//							DefaultMutableTreeNode idNode = new DefaultMutableTreeNode(
-//									id);
-//							node.add(idNode);
-//						}
-						root.add(node);
-					}
-					JTree tree = new JTree(root);
-					scrollPane.setViewportView(tree);
-					tree.addTreeSelectionListener(new TreeSelectionListener() {
+					if (classList != null && classList.size() > 0) {
+						DefaultMutableTreeNode root = new DefaultMutableTreeNode(
+								"classs", true);
+						Iterator<String> iterator = classList.iterator();
+						while (iterator.hasNext()) {
+							String className = iterator.next();
+							DefaultMutableTreeNode node = new DefaultMutableTreeNode(
+									className, true);
+							ArrayList<Integer> instances = (ArrayList<Integer>) SqliteManager
+									.getInstance().getInstanceForClass(
+											className);
+							Iterator<Integer> iterator2 = instances.iterator();
+							while (iterator2.hasNext()) {
+								int id = iterator2.next();
+								DefaultMutableTreeNode idNode = new DefaultMutableTreeNode(
+										id);
+								node.add(idNode);
+							}
+							root.add(node);
+						}
+						JTree tree = new JTree(root);
+						scrollPane.setViewportView(tree);
+						tree.addTreeSelectionListener(new TreeSelectionListener() {
 
-						@Override
-						public void valueChanged(TreeSelectionEvent e) {
-							synchronized (this) {
-								// TODO Auto-generated method stub
-								DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree
-										.getLastSelectedPathComponent();
+							@Override
+							public void valueChanged(TreeSelectionEvent e) {
+								synchronized (this) {
+									// TODO Auto-generated method stub
+									DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree
+											.getLastSelectedPathComponent();
 
-								if (node == null)
-									return;
-								Object object = node.getUserObject();
-								if (node.isLeaf()) {
-
-									System.out.print("valuechange");
-									int id = (int) object;
-									int length = SqliteManager.getInstance()
-											.findLengthById(id,
-													new ArrayList<Integer>());
-									InstanceTraceItem item = SqliteManager
-											.getInstance()
-											.getInstanceTraceItem(id,
-													new ArrayList<Integer>(),
-													length);
-									JTree tree = new JTree(item);
-									scrollPane_1.setViewportView(tree);
-									scrollPane_1.invalidate();
+									if (node == null)
+										return;
+									Object object = node.getUserObject();
+									if (node.isLeaf()) {
+										System.out.print("valuechange");
+										if (object instanceof Integer) {
+											int id = (int) object;
+											int length = SqliteManager
+													.getInstance()
+													.findLengthById(
+															id,
+															new ArrayList<Integer>());
+											InstanceTraceItem item = SqliteManager
+													.getInstance()
+													.getInstanceTraceItem(
+															id,
+															new ArrayList<Integer>(),
+															length);
+											JTree tree = new JTree(item);
+											scrollPane_1.setViewportView(tree);
+											scrollPane_1.invalidate();
+										}
+									}
 								}
 							}
-						}
-					});
+						});
+					}
 				} catch (FileNotFoundException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

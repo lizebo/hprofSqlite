@@ -52,7 +52,6 @@ public class ResultFrame extends JFrame {
 	JTree tree;
 	JTree tree_1;
 
-	private SearchFrame searchFrame;
 
 	/**
 	 * Launch the application.
@@ -86,7 +85,6 @@ public class ResultFrame extends JFrame {
 	}
 
 	private void init() {
-		searchFrame = new SearchFrame();
 
 		setBounds(100, 100, 670, 475);
 		contentPane = new JPanel();
@@ -197,13 +195,13 @@ public class ResultFrame extends JFrame {
 		gbc_scrollPane_1.gridy = 3;
 		contentPane.add(scrollPane_1, gbc_scrollPane_1);
 
-		JButton btnNewButton = new JButton("\u67E5\u627E\u7C7B\u4FE1\u606F");
-		btnNewButton.setEnabled(false);
-		btnNewButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				searchFrame.setVisible(true);
-			}
-		});
+//		JButton btnNewButton = new JButton("\u67E5\u627E\u7C7B\u4FE1\u606F");
+//		btnNewButton.setEnabled(false);
+//		btnNewButton.addActionListener(new ActionListener() {
+//			public void actionPerformed(ActionEvent arg0) {
+//				searchFrame.setVisible(true);
+//			}
+//		});
 
 		textField_4 = new JTextField();
 		textField_4.setText("\u5360\u7528\u5185\u5B58\u5927\u5C0F");
@@ -254,8 +252,8 @@ public class ResultFrame extends JFrame {
 		gbc_btnNewButton.anchor = GridBagConstraints.NORTHEAST;
 		gbc_btnNewButton.gridwidth = 2;
 		gbc_btnNewButton.gridx = 4;
-		gbc_btnNewButton.gridy = 5;
-		contentPane.add(btnNewButton, gbc_btnNewButton);
+//		gbc_btnNewButton.gridy = 5;
+//		contentPane.add(btnNewButton, gbc_btnNewButton);
 
 		addWindowListener(new WindowAdapter() {
 			@Override
@@ -301,7 +299,7 @@ public class ResultFrame extends JFrame {
 							scrollPane_1.setViewportView(tree_1);
 							scrollPane_1.invalidate();
 						}
-						btnNewButton.setEnabled(true);
+//						btnNewButton.setEnabled(true);
 					}else {
 						scrollPane.setViewportView(tree);
 						scrollPane_1.setViewportView(tree_1);

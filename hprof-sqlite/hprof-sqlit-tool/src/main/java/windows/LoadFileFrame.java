@@ -4,8 +4,11 @@ import java.awt.EventQueue;
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.JTextField;
 import javax.swing.JButton;
 
@@ -29,11 +32,8 @@ public class LoadFileFrame extends JFrame {
 	private JPanel contentPane;
 	private JTextField textField;
 	private JTextField textField_1;
-	private JTextField textField_2;
-	private JTextField textField_3;
 	
 	private File soureFile;
-	private JButton btnNewButton_2;
 	
 	public boolean needRefresh = false;
 
@@ -61,7 +61,7 @@ public class LoadFileFrame extends JFrame {
 			@Override
 			public void windowClosing(WindowEvent e) {
 				textField_1.setText("");
-				textField_3.setText("");
+				soureFile = null;
 			}
 		});
 		setBounds(100, 100, 450, 300);
@@ -82,6 +82,8 @@ public class LoadFileFrame extends JFrame {
 		contentPane.add(textField_1);
 		textField_1.setColumns(10);
 		JFileChooser fileChooser = new JFileChooser();
+		FileNameExtensionFilter fiter = new FileNameExtensionFilter("hprof文件", "hprof");
+		fileChooser.setFileFilter(fiter);
 		JButton btnNewButton = new JButton("\u2026");
 		btnNewButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
@@ -93,25 +95,33 @@ public class LoadFileFrame extends JFrame {
 		btnNewButton.setBounds(320, 82, 32, 23);
 		contentPane.add(btnNewButton);
 		
-		
-		textField_2 = new JTextField();
-		textField_2.setEditable(false);
-		textField_2.setText("\u6570\u636E\u5E93\u4F4D\u7F6E");
-		textField_2.setBounds(74, 137, 66, 21);
-		contentPane.add(textField_2);
-		textField_2.setColumns(10);
-		
-		textField_3 = new JTextField();
-		textField_3.setBounds(167, 137, 132, 21);
-		contentPane.add(textField_3);
-		textField_3.setColumns(10);
-		
 		JButton btnNewButton_1 = new JButton("\u89E3\u6790");
 		btnNewButton_1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				String dbName = textField_3.getText();
-
-				if(soureFile!=null&&dbName!=null){
+//				String dbName = textField_3.getText();				
+				if(soureFile!=null&&soureFile.exists()&&soureFile.length()!=0){
+					JFileChooser saveChooser = new JFileChooser();
+					saveChooser.addChoosableFileFilter(new FileFilter() {						
+						@Override
+						public String getDescription() {
+							// TODO Auto-generated method stub
+							return "*.db";
+						}
+						
+						@Override
+						public boolean accept(File f) {
+							// TODO Auto-generated method stub
+			                if (f.isDirectory()) {//如果是目录就可以访问
+			                    return true;
+			                }
+			                if (f.getName().endsWith(".db")) {//如果是,txt文件格式的文件,那么就可以显示出来
+			                    return true;
+			                }
+			                return false;
+						}
+					});
+					saveChooser.showSaveDialog(null);
+					String dbName = saveChooser.getSelectedFile().getAbsolutePath();
 					SqliteManager.getInstance().createTables(dbName);
 		            InputStream in;
 					try {
@@ -126,7 +136,7 @@ public class LoadFileFrame extends JFrame {
 			            SqliteManager.getInstance().commit();
 			            needRefresh = true;
 						textField_1.setText("");
-						textField_3.setText("");
+						soureFile = null;
 			            setVisible(false);
 					} catch (FileNotFoundException e1) {
 						// TODO Auto-generated catch block
@@ -136,24 +146,16 @@ public class LoadFileFrame extends JFrame {
 						e1.printStackTrace();
 					}
 
+				}else{
+					JOptionPane.showMessageDialog(contentPane, "没有选择dump文件","错误提示",JOptionPane.ERROR_MESSAGE);
 				}
-
 			}
 		});
-		btnNewButton_1.setBounds(161, 191, 93, 23);
+		btnNewButton_1.setBounds(165, 136, 93, 23);
 		contentPane.add(btnNewButton_1);
 		
 		JFileChooser fileChooser1 = new JFileChooser();
 		fileChooser1.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-		btnNewButton_2 = new JButton("\u2026");
-		btnNewButton_2.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				fileChooser1.showOpenDialog(LoadFileFrame.this);
-				textField_3.setText(fileChooser1.getSelectedFile().getAbsolutePath()+"\\hprof");
-			}
-		});
-		btnNewButton_2.setBounds(320, 136, 32, 23);
-		contentPane.add(btnNewButton_2);
 	}
 	
 }

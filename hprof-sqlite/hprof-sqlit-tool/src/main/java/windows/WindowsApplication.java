@@ -44,6 +44,8 @@ public class WindowsApplication {
 	private LoadFileFrame loadFileFrame;
 	private LoadDBFrame loadDBFrame;
 	private ResultFrame resultFrame;
+
+	private SearchFrame searchFrame;
 	private CreateHprofFrame createHprofFrame;
 
 	/**
@@ -82,6 +84,7 @@ public class WindowsApplication {
 		createHprofFrame = new CreateHprofFrame();
 		loadDBFrame = new LoadDBFrame();
 		resultFrame = new ResultFrame();
+		searchFrame = new SearchFrame();
 		JFileChooser fileChooser = new JFileChooser();
 		
 		JButton btnNewButton = new JButton("\u8F7D\u5165\u6587\u4EF6");
@@ -123,7 +126,7 @@ public class WindowsApplication {
 		btnNewButton_1.setBounds(150, 102, 135, 23);
 		frame.getContentPane().add(btnNewButton_1);
 		
-		JButton button_1 = new JButton("\u67E5\u770B\u7ED3\u679C");
+		JButton button_1 = new JButton("\u6700\u5927\u5185\u5B58\u5360\u7528");
 		button_1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 //				resultFrame
@@ -136,8 +139,18 @@ public class WindowsApplication {
 			}
 		});
 		button_1.setEnabled(false);
-		button_1.setBounds(305, 210, 93, 23);
+		button_1.setBounds(293, 208, 105, 23);
 		frame.getContentPane().add(button_1);
+		
+		JButton btnNewButton_2 = new JButton("\u67E5\u627E\u5F15\u7528\u94FE");
+		btnNewButton_2.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				searchFrame.setVisible(true);
+			}
+		});
+		btnNewButton_2.setEnabled(false);
+		btnNewButton_2.setBounds(305, 179, 93, 23);
+		frame.getContentPane().add(btnNewButton_2);
 		
 		button.addActionListener(new ActionListener() {
 			
@@ -170,8 +183,10 @@ public class WindowsApplication {
 			public void windowActivated(WindowEvent arg0) {
 				if (SqliteManager.getInstance().hasConnect()) {
 					button_1.setEnabled(true);
+					btnNewButton_2.setEnabled(true);
 				}else {
 					button_1.setEnabled(false);
+					btnNewButton_2.setEnabled(false);
 				}
 			}
 		});
