@@ -8,7 +8,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 
 import javax.annotation.Nonnull;
-import javax.naming.OperationNotSupportedException;
 
 import static com.badoo.hprof.library.util.StreamUtil.readByte;
 import static com.badoo.hprof.library.util.StreamUtil.readInt;

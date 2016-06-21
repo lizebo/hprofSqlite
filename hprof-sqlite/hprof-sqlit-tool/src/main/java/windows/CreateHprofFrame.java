@@ -5,6 +5,7 @@ import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.IOException;
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -97,25 +98,53 @@ public class CreateHprofFrame extends JFrame {
 
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				// TODO Auto-generated method stub
-				ip = textField.getText();
-				packageName = textField_2.getText();
-				JFileChooser saveChooser = new JFileChooser();
-				saveChooser.showSaveDialog(null);
-				String hprofPath = saveChooser.getSelectedFile().getAbsolutePath();
-				if (ip != null && packageName != null && hprofPath != null) {
-					CmdProceManager.createHprof(ip, packageName, hprofPath);
-					File file = new File(hprofPath);
-					if (!file.exists()||(file.exists() && file.length() == 0)) {
-						file.delete();
-						JOptionPane.showMessageDialog(contentPane, "�����ļ�ʧ�ܣ�����������","������ʾ",JOptionPane.ERROR_MESSAGE);
-						return;
+				synchronized (this) {
+					// TODO Auto-generated method stub
+					ip = textField.getText().trim();
+					packageName = textField_2.getText().trim();
+					JFileChooser saveChooser = new JFileChooser();
+					saveChooser.addChoosableFileFilter(new MyFileFilter(
+							".hprof", "dump文件(.hprof)"));
+					int fresult = saveChooser.showSaveDialog(null);
+					File newFile = null;
+					if (fresult == JFileChooser.APPROVE_OPTION) { // 用户点击了“确定”按钮
+						File file = saveChooser.getSelectedFile(); // 获得文件名
+						String ends = ".hprof";
+						if (file.getAbsolutePath().toUpperCase()
+								.endsWith(ends.toUpperCase())) {
+							// 如果文件是以选定扩展名结束的，则使用原名
+							newFile = file;
+						} else {
+							// 否则加上选定的扩展名
+							newFile = new File(file.getAbsolutePath() + ends);
+						}
+						// 以下用 newFile 完成保存文件的操作
 					}
-					setVisible(false);
-				}else {
-					JOptionPane.showMessageDialog(contentPane, "��������","������ʾ",JOptionPane.ERROR_MESSAGE);
-				}
+					String hprofPath = newFile.getAbsolutePath();
+					if (ip != null && packageName != null && hprofPath != null) {
+						try {
+							CmdProceManager.createHprof(ip, packageName,
+									hprofPath);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						File file = new File(hprofPath);
+						if (!file.exists()
+								|| (file.exists() && file.length() == 0)) {
+							file.delete();
+							JOptionPane.showMessageDialog(contentPane,
+									"生成文件失败，请重新试试", "错误提示ʾ",
+									JOptionPane.ERROR_MESSAGE);
+							return;
+						}
+						setVisible(false);
+					} else {
+						JOptionPane.showMessageDialog(contentPane, "参数不足",
+								"提示ʾ", JOptionPane.ERROR_MESSAGE);
+					}
 
+				}
 			}
 		});
 	}

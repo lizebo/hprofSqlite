@@ -3,6 +3,7 @@
 	<classpathentry kind="src" path="src/main/java"/>
 	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry exported="true" kind="con" path="org.springsource.ide.eclipse.gradle.classpathcontainer"/>
-	<classpathentry kind="lib" path="libs/sqlite-jdbc-3.8.11.2.jar"/>
+	<classpathentry exported="true" kind="lib" path="libs/sqlite-jdbc-3.8.11.2.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/hprof-lib"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -15,4 +15,11 @@
 		<nature>org.springsource.ide.eclipse.gradle.core.nature</nature>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>hprof-lib</name>
+			<type>2</type>
+			<location>E:/workspace1/hprofSqlite/hprof-sqlite/hprof-lib</location>
+		</link>
+	</linkedResources>
 </projectDescription>

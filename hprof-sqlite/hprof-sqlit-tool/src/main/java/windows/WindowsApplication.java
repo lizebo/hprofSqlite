@@ -36,6 +36,9 @@ import javax.swing.Box;
 
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.GridBagLayout;
+import java.awt.GridBagConstraints;
+import java.awt.Insets;
 
 public class WindowsApplication {
 
@@ -79,13 +82,18 @@ public class WindowsApplication {
 
 		frame.setBounds(100, 100, 450, 300);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.getContentPane().setLayout(null);
 		loadFileFrame = new LoadFileFrame();
 		createHprofFrame = new CreateHprofFrame();
 		loadDBFrame = new LoadDBFrame();
 		resultFrame = new ResultFrame();
 		searchFrame = new SearchFrame();
 		JFileChooser fileChooser = new JFileChooser();
+		GridBagLayout gridBagLayout = new GridBagLayout();
+		gridBagLayout.columnWidths = new int[] {150, 150, 150};
+		gridBagLayout.rowHeights = new int[]{69, 23, 23, 23, 23, 23, 0};
+		gridBagLayout.columnWeights = new double[]{0.0, 0.0, 0.0};
+		gridBagLayout.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
+		frame.getContentPane().setLayout(gridBagLayout);
 		
 		JButton btnNewButton = new JButton("\u8F7D\u5165\u6587\u4EF6");
 		btnNewButton.addActionListener(new ActionListener() {
@@ -98,33 +106,13 @@ public class WindowsApplication {
 				loadFileFrame.setVisible(true);
 			}
 		});
-		
-//			{
-//			@Override
-//			public void mouseClicked(MouseEvent arg0) {
-//				Frame fileFrame = new Frame();
-//				fileFrame.setTitle("Ö÷´°Ìå");
-//
-//				fileFrame.setLocation(300,200);
-//
-//				fileFrame.setVisible(true);
-//			}
-//		});
-		btnNewButton.setBounds(150, 69, 135, 23);
-		frame.getContentPane().add(btnNewButton);
-		
-		JButton button = new JButton("\u8F7D\u5165\u6570\u636E\u5E93\u6587\u4EF6");
-		button.setBounds(150, 135, 135, 23);
-		frame.getContentPane().add(button);
-		
-		JButton btnNewButton_1 = new JButton("\u4E00\u952E\u751F\u6210hprof\u6587\u4EF6");
-		btnNewButton_1.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				createHprofFrame.setVisible(true);
-			}
-		});
-		btnNewButton_1.setBounds(150, 102, 135, 23);
-		frame.getContentPane().add(btnNewButton_1);
+		GridBagConstraints gbc_btnNewButton = new GridBagConstraints();
+		gbc_btnNewButton.anchor = GridBagConstraints.NORTH;
+		gbc_btnNewButton.fill = GridBagConstraints.HORIZONTAL;
+		gbc_btnNewButton.insets = new Insets(0, 0, 5, 5);
+		gbc_btnNewButton.gridx = 1;
+		gbc_btnNewButton.gridy = 1;
+		frame.getContentPane().add(btnNewButton, gbc_btnNewButton);
 		
 		JButton button_1 = new JButton("\u6700\u5927\u5185\u5B58\u5360\u7528");
 		button_1.addActionListener(new ActionListener() {
@@ -138,9 +126,6 @@ public class WindowsApplication {
 				loadFileFrame.needRefresh = false;
 			}
 		});
-		button_1.setEnabled(false);
-		button_1.setBounds(293, 208, 105, 23);
-		frame.getContentPane().add(button_1);
 		
 		JButton btnNewButton_2 = new JButton("\u67E5\u627E\u5F15\u7528\u94FE");
 		btnNewButton_2.addActionListener(new ActionListener() {
@@ -148,9 +133,29 @@ public class WindowsApplication {
 				searchFrame.setVisible(true);
 			}
 		});
-		btnNewButton_2.setEnabled(false);
-		btnNewButton_2.setBounds(305, 179, 93, 23);
-		frame.getContentPane().add(btnNewButton_2);
+		
+		JButton btnNewButton_1 = new JButton("\u4E00\u952E\u751F\u6210hprof\u6587\u4EF6");
+		btnNewButton_1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				createHprofFrame.setVisible(true);
+			}
+		});
+		GridBagConstraints gbc_btnNewButton_1 = new GridBagConstraints();
+		gbc_btnNewButton_1.fill = GridBagConstraints.HORIZONTAL;
+		gbc_btnNewButton_1.anchor = GridBagConstraints.NORTH;
+		gbc_btnNewButton_1.insets = new Insets(0, 0, 5, 5);
+		gbc_btnNewButton_1.gridx = 1;
+		gbc_btnNewButton_1.gridy = 2;
+		frame.getContentPane().add(btnNewButton_1, gbc_btnNewButton_1);
+		
+		JButton button = new JButton("\u8F7D\u5165\u6570\u636E\u5E93\u6587\u4EF6");
+		GridBagConstraints gbc_button = new GridBagConstraints();
+		gbc_button.anchor = GridBagConstraints.NORTH;
+		gbc_button.fill = GridBagConstraints.HORIZONTAL;
+		gbc_button.insets = new Insets(0, 0, 5, 5);
+		gbc_button.gridx = 1;
+		gbc_button.gridy = 3;
+		frame.getContentPane().add(button, gbc_button);
 		
 		button.addActionListener(new ActionListener() {
 			
@@ -160,6 +165,19 @@ public class WindowsApplication {
 				loadDBFrame.setVisible(true);
 			}
 		});
+		btnNewButton_2.setEnabled(false);
+		GridBagConstraints gbc_btnNewButton_2 = new GridBagConstraints();
+		gbc_btnNewButton_2.anchor = GridBagConstraints.NORTHWEST;
+		gbc_btnNewButton_2.insets = new Insets(0, 0, 5, 0);
+		gbc_btnNewButton_2.gridx = 2;
+		gbc_btnNewButton_2.gridy = 4;
+		frame.getContentPane().add(btnNewButton_2, gbc_btnNewButton_2);
+		button_1.setEnabled(false);
+		GridBagConstraints gbc_button_1 = new GridBagConstraints();
+		gbc_button_1.anchor = GridBagConstraints.NORTHWEST;
+		gbc_button_1.gridx = 2;
+		gbc_button_1.gridy = 5;
+		frame.getContentPane().add(button_1, gbc_button_1);
 		frame.addFocusListener(new FocusListener() {
 			
 			@Override

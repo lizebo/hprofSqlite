@@ -20,7 +20,6 @@ import static com.badoo.hprof.library.util.StreamUtil.skip;
  * <p/>
  * Created by Erik Andre on 17/07/2014.
  */
-@SuppressWarnings({"RedundantIfStatement", "unused"})
 public class Instance extends Record {
 
     private int objectId;

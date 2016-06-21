@@ -51,47 +51,52 @@ public class LoadDBFrame extends JFrame {
 				textField_1.setText("");
 			}
 		});
-//		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		// setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
 		contentPane.setLayout(null);
-		
+
 		txtDb = new JTextField();
 		txtDb.setText("DB\u6587\u4EF6");
 		txtDb.setEditable(false);
 		txtDb.setBounds(80, 104, 46, 21);
 		contentPane.add(txtDb);
 		txtDb.setColumns(10);
-		
+
 		textField_1 = new JTextField();
 		textField_1.setBounds(136, 104, 162, 21);
 		contentPane.add(textField_1);
 		textField_1.setColumns(10);
 		JFileChooser fileChooser = new JFileChooser();
-		FileNameExtensionFilter fiter = new FileNameExtensionFilter("数据库文件", "db");
+		FileNameExtensionFilter fiter = new FileNameExtensionFilter("数据库文件",
+				"db");
 		fileChooser.setFileFilter(fiter);
 		JButton button = new JButton("\u2026");
 		button.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				fileChooser.showOpenDialog(LoadDBFrame.this);
-				textField_1.setText(fileChooser.getSelectedFile().getAbsolutePath());
+				textField_1.setText(fileChooser.getSelectedFile()
+						.getAbsolutePath());
 			}
 		});
 		button.setBounds(311, 103, 34, 23);
 		contentPane.add(button);
-		
+
 		button_1 = new JButton("\u786E\u5B9A");
 		button_1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				String dbName = fileChooser.getSelectedFile().getAbsolutePath();
-				if (dbName!=null) {
-					SqliteManager.getInstance().connect(dbName);
-					needRefresh = true;
-					textField_1.setText("");
-					setVisible(false);
+				synchronized (this) {
+					String dbName = fileChooser.getSelectedFile()
+							.getAbsolutePath();
+					if (dbName != null) {
+						SqliteManager.getInstance().connect(dbName);
+						needRefresh = true;
+						textField_1.setText("");
+						setVisible(false);
 
+					}
 				}
 			}
 		});

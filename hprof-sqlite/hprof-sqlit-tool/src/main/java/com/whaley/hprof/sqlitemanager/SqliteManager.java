@@ -205,7 +205,7 @@ public class SqliteManager {
 				Instance instance = (Instance) obj;
 				int instanceLength = 0;
 				if (!systemClass.contains(instance.getClassId())) {
-					System.out.print(instance.getClassId()+"\n");
+//					System.out.print(instance.getClassId()+"\n");
 					List<InstanceField> list1 = classFiled.get(instance
 							.getClassId());
 					Iterator<InstanceField> iterator2 = list1.iterator();
@@ -361,7 +361,7 @@ public class SqliteManager {
 							+ SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD);
 			ResultSet set = indexStatement.executeQuery();
 			while (set.next()) {
-				System.out.print("connect");
+//				System.out.print("connect");
 				int key = set.getInt("value");
 				int value = set.getInt("instance_id");
 				String fieldName = set.getString("field_name");
@@ -873,7 +873,7 @@ public class SqliteManager {
 									+ " where instance_id = "+id);
 					statement.execute();
 					statement.close();
-					System.out.print(classId);
+//					System.out.print(classId);
 				}
 				length += instanceResult.getInt("length");
 				if (length > 0) {

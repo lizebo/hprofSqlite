@@ -32,9 +32,9 @@ public class LoadFileFrame extends JFrame {
 	private JPanel contentPane;
 	private JTextField textField;
 	private JTextField textField_1;
-	
+
 	private File soureFile;
-	
+
 	public boolean needRefresh = false;
 
 	/**
@@ -69,93 +69,102 @@ public class LoadFileFrame extends JFrame {
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
 		contentPane.setLayout(null);
-		
+
 		textField = new JTextField();
 		textField.setText("\u6587\u4EF6\u5730\u5740");
 		textField.setEditable(false);
 		textField.setBounds(74, 83, 66, 21);
 		contentPane.add(textField);
 		textField.setColumns(10);
-		
+
 		textField_1 = new JTextField();
 		textField_1.setBounds(167, 83, 132, 21);
 		contentPane.add(textField_1);
 		textField_1.setColumns(10);
 		JFileChooser fileChooser = new JFileChooser();
-		FileNameExtensionFilter fiter = new FileNameExtensionFilter("hprofÎÄ¼ş", "hprof");
+		FileNameExtensionFilter fiter = new FileNameExtensionFilter("hprofæ–‡ä»¶",
+				"hprof");
 		fileChooser.setFileFilter(fiter);
 		JButton btnNewButton = new JButton("\u2026");
 		btnNewButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				fileChooser.showOpenDialog(LoadFileFrame.this);
-				soureFile = fileChooser.getSelectedFile();
-				textField_1.setText(soureFile.getAbsolutePath());
+				synchronized (this) {
+					fileChooser.showOpenDialog(LoadFileFrame.this);
+					soureFile = fileChooser.getSelectedFile();
+					textField_1.setText(soureFile.getAbsolutePath());
+				}
 			}
 		});
 		btnNewButton.setBounds(320, 82, 32, 23);
 		contentPane.add(btnNewButton);
-		
+
 		JButton btnNewButton_1 = new JButton("\u89E3\u6790");
 		btnNewButton_1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-//				String dbName = textField_3.getText();				
-				if(soureFile!=null&&soureFile.exists()&&soureFile.length()!=0){
-					JFileChooser saveChooser = new JFileChooser();
-					saveChooser.addChoosableFileFilter(new FileFilter() {						
-						@Override
-						public String getDescription() {
-							// TODO Auto-generated method stub
-							return "*.db";
-						}
-						
-						@Override
-						public boolean accept(File f) {
-							// TODO Auto-generated method stub
-			                if (f.isDirectory()) {//Èç¹ûÊÇÄ¿Â¼¾Í¿ÉÒÔ·ÃÎÊ
-			                    return true;
-			                }
-			                if (f.getName().endsWith(".db")) {//Èç¹ûÊÇ,txtÎÄ¼ş¸ñÊ½µÄÎÄ¼ş,ÄÇÃ´¾Í¿ÉÒÔÏÔÊ¾³öÀ´
-			                    return true;
-			                }
-			                return false;
-						}
-					});
-					saveChooser.showSaveDialog(null);
-					String dbName = saveChooser.getSelectedFile().getAbsolutePath();
-					SqliteManager.getInstance().createTables(dbName);
-		            InputStream in;
-					try {
-						in = new BufferedInputStream(new FileInputStream(soureFile));
-			            SQLDataProcessor processor = new SQLDataProcessor();
-			            HprofReader reader = new HprofReader(in, processor);
-			            while (reader.hasNext()) {
-			                reader.next();
-			            }
-			            SqliteManager.getInstance().initClassLength();
-			            SqliteManager.getInstance().getTotalSize();
-			            SqliteManager.getInstance().commit();
-			            needRefresh = true;
-						textField_1.setText("");
-						soureFile = null;
-			            setVisible(false);
-					} catch (FileNotFoundException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					} catch (IOException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					}
+				synchronized (this) {
+					if (soureFile != null && soureFile.exists()
+							&& soureFile.length() != 0) {
+						JFileChooser saveChooser = new JFileChooser();
+						saveChooser.addChoosableFileFilter(new FileFilter() {
+							@Override
+							public String getDescription() {
+								// TODO Auto-generated method stub
+								return "*.db";
+							}
 
-				}else{
-					JOptionPane.showMessageDialog(contentPane, "Ã»ÓĞÑ¡ÔñdumpÎÄ¼ş","´íÎóÌáÊ¾",JOptionPane.ERROR_MESSAGE);
+							@Override
+							public boolean accept(File f) {
+								// TODO Auto-generated method stub
+								if (f.isDirectory()) {// å¦‚æœæ˜¯ç›®å½•å°±å¯ä»¥è®¿é—®
+									return true;
+								}
+								if (f.getName().endsWith(".db")) {// å¦‚æœæ˜¯,txtæ–‡ä»¶æ ¼å¼çš„æ–‡ä»¶,é‚£ä¹ˆå°±å¯ä»¥æ˜¾ç¤ºå‡ºæ¥
+									return true;
+								}
+								return false;
+							}
+						});
+						saveChooser.showSaveDialog(null);
+						String dbName = saveChooser.getSelectedFile()
+								.getAbsolutePath();
+						SqliteManager.getInstance().createTables(dbName);
+						InputStream in;
+						try {
+							in = new BufferedInputStream(new FileInputStream(
+									soureFile));
+							SQLDataProcessor processor = new SQLDataProcessor();
+							HprofReader reader = new HprofReader(in, processor);
+							while (reader.hasNext()) {
+								reader.next();
+							}
+							SqliteManager.getInstance().initClassLength();
+							SqliteManager.getInstance().getTotalSize();
+							SqliteManager.getInstance().commit();
+							needRefresh = true;
+							textField_1.setText("");
+							soureFile = null;
+							setVisible(false);
+						} catch (FileNotFoundException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						} catch (IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+
+					} else {
+						JOptionPane
+								.showMessageDialog(contentPane, "æ²¡æœ‰é€‰æ‹©dumpæ–‡ä»¶",
+										"é”™è¯¯æç¤º", JOptionPane.ERROR_MESSAGE);
+					}
 				}
 			}
 		});
 		btnNewButton_1.setBounds(165, 136, 93, 23);
 		contentPane.add(btnNewButton_1);
-		
+
 		JFileChooser fileChooser1 = new JFileChooser();
 		fileChooser1.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 	}
-	
+
 }

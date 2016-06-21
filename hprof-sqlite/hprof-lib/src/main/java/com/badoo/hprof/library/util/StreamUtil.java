@@ -13,7 +13,6 @@ import javax.annotation.Nonnull;
  * <p/>
  * Created by Erik Andre on 13/07/2014.
  */
-@SuppressWarnings("UnusedDeclaration")
 public class StreamUtil {
 
     private static final byte[] buffer = new byte[1024];

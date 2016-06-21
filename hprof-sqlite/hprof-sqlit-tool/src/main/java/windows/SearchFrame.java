@@ -199,7 +199,7 @@ public class SearchFrame extends JFrame {
 		});
 		button.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				String path = textField_1.getText();
+				String path = textField_1.getText().trim();
 				File file = new File(path);
 				try {
 					InputStream in = new BufferedInputStream(
