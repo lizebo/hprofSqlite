@@ -510,26 +510,29 @@ public class SqliteManager {
 	 */
 	public ArrayList<InstanceTraceItem> findHeapMax() {
 		ArrayList<InstanceTraceItem> items = new ArrayList<InstanceTraceItem>();
-		try {
-			PreparedStatement selectMaxState = conn
-					.prepareStatement("select * from table_primitive_array order by length desc limit 3;");
-			ResultSet resultSet = selectMaxState.executeQuery();
-			while (resultSet.next()) {
-				int id = resultSet.getInt("id");
-				// traceIds.clear();
-				int length = findLengthById(id, new ArrayList<Integer>());
-				InstanceTraceItem item = getInstanceTraceItem(id,
-						new ArrayList<Integer>(), length);
-				if (item != null) {
-					items.add(item);
+
+			PreparedStatement selectMaxState;
+			try {
+				selectMaxState = conn
+						.prepareStatement("select * from table_primitive_array order by length desc limit 10;");
+				ResultSet resultSet = selectMaxState.executeQuery();
+				while (resultSet.next()) {
+					int id = resultSet.getInt("id");
+					// traceIds.clear();
+					int length = findLengthById(id, new ArrayList<Integer>());
+					InstanceTraceItem item = getInstanceTraceItem(id,
+							new ArrayList<Integer>(), length);
+					if (item != null) {
+						items.add(item);
+					}
+					if (items.size() >= 2) {
+						break;
+					}
 				}
-				if (items.size() >= 2) {
-					break;
-				}
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
 		return items;
 	}
 
@@ -749,7 +752,7 @@ public class SqliteManager {
 				if (!hasData) {
 					hasData = true;
 					PreparedStatement classState = conn
-							.prepareStatement("select class_id from "
+							.prepareStatement("select * from "
 									+ SQLDOMAIN.INDEW_CLASS_CONS_STATIC_FIELD
 									+ " where value=" + id);
 					ResultSet classSet = classState.executeQuery();
@@ -959,12 +962,12 @@ public class SqliteManager {
 	 * @param classId
 	 * @param traceIds
 	 * @return
+	 * @throws SQLException 
 	 */
-	public int findLengthById(int classId, List<Integer> traceIds) {
+	public int findLengthById(int classId, List<Integer> traceIds) throws SQLException {
 		int length = 0;
 		traceIds.add(classId);
 		// level++;
-		try {
 			PreparedStatement cls = conn.prepareStatement("select * from "
 					+ SQLDOMAIN.TABLE_CLASS + " where id = " + classId);
 			ResultSet clsSet = cls.executeQuery();
@@ -1077,9 +1080,6 @@ public class SqliteManager {
 
 			}
 
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
 		return length;
 	}
 
@@ -1169,25 +1169,5 @@ public class SqliteManager {
 
 		return length;
 	}
-
-	// public void findTraceByName(String name) {
-	// try {
-	// PreparedStatement cls = conn.prepareStatement("select id from " +
-	// SQLDOMAIN.TABLE_CLASS + " where name=\"" + name + "\"");
-	// ResultSet set = cls.executeQuery();
-	// while (set.next()) {
-	// ArrayList<TraceItem> result = new ArrayList<TraceItem>();
-	// findLengthById(set.getInt("id"), new ArrayList<Integer>());
-	// for (int i = 0; i < result.size(); i++)
-	// System.out.print(result.get(i).getName() + " length=" +
-	// result.get(i).getValue() + " level=" + i + " percent:" + (float)
-	// result.get(i).getValue() / totalSize + "\n");
-	// }
-	// } catch (SQLException e) {
-	// e.printStackTrace();
-	// }
-	// }
-
-	// public interface
 
 }

@@ -70,7 +70,7 @@ public class LoadDBFrame extends JFrame {
 		contentPane.add(textField_1);
 		textField_1.setColumns(10);
 		JFileChooser fileChooser = new JFileChooser();
-		FileNameExtensionFilter fiter = new FileNameExtensionFilter("Êı¾İ¿âÎÄ¼ş",
+		FileNameExtensionFilter fiter = new FileNameExtensionFilter("æ•°æ®åº“æ–‡ä»¶",
 				"db");
 		fileChooser.setFileFilter(fiter);
 		JButton button = new JButton("\u2026");

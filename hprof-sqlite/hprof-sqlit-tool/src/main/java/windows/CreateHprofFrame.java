@@ -17,6 +17,7 @@ import javax.swing.JTextField;
 import javax.swing.JButton;
 
 import com.whaley.hprof.CmdProceManager;
+import com.whaley.hprof.SHProceManager;
 
 public class CreateHprofFrame extends JFrame {
 
@@ -123,22 +124,23 @@ public class CreateHprofFrame extends JFrame {
 					String hprofPath = newFile.getAbsolutePath();
 					if (ip != null && packageName != null && hprofPath != null) {
 						try {
-							CmdProceManager.createHprof(ip, packageName,
-									hprofPath);
+							CmdProceManager.createHprof(ip, packageName,hprofPath);
+//							SHProceManager.createHprof(ip, packageName, hprofPath);
+							File file = new File(hprofPath);
+							if (!file.exists()
+									|| (file.exists() && file.length() == 0)) {
+								file.delete();
+								JOptionPane.showMessageDialog(contentPane,
+										"生成文件失败，请重新试试", "错误提示ʾ",
+										JOptionPane.ERROR_MESSAGE);
+								return;
+							}
+							setVisible(false);
 						} catch (IOException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
-						File file = new File(hprofPath);
-						if (!file.exists()
-								|| (file.exists() && file.length() == 0)) {
-							file.delete();
-							JOptionPane.showMessageDialog(contentPane,
-									"生成文件失败，请重新试试", "错误提示ʾ",
-									JOptionPane.ERROR_MESSAGE);
-							return;
-						}
-						setVisible(false);
+
 					} else {
 						JOptionPane.showMessageDialog(contentPane, "参数不足",
 								"提示ʾ", JOptionPane.ERROR_MESSAGE);

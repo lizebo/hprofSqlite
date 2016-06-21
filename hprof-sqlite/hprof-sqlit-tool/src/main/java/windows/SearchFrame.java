@@ -28,6 +28,7 @@ import com.whaley.hprof.sqlitemanager.Utils;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -183,15 +184,22 @@ public class SearchFrame extends JFrame {
 						synchronized (this) {
 							System.out.print("valuechange");
 							int id = (int) list.getSelectedValue();
-							int length = SqliteManager.getInstance()
-									.findLengthById(id,
-											new ArrayList<Integer>());
-							InstanceTraceItem item = SqliteManager
-									.getInstance().getInstanceTraceItem(id,
-											new ArrayList<Integer>(), length);
-							JTree tree = new JTree(item);
-							scrollPane_1.setViewportView(tree);
-							scrollPane_1.invalidate();
+							int length;
+							try {
+								length = SqliteManager.getInstance()
+										.findLengthById(id,
+												new ArrayList<Integer>());
+								InstanceTraceItem item = SqliteManager
+										.getInstance().getInstanceTraceItem(id,
+												new ArrayList<Integer>(), length);
+								JTree tree = new JTree(item);
+								scrollPane_1.setViewportView(tree);
+								scrollPane_1.invalidate();
+							} catch (SQLException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
+
 						}
 					}
 				});
@@ -242,21 +250,30 @@ public class SearchFrame extends JFrame {
 									if (node.isLeaf()) {
 										System.out.print("valuechange");
 										if (object instanceof Integer) {
+											System.out.print("Integer");
 											int id = (int) object;
-											int length = SqliteManager
-													.getInstance()
-													.findLengthById(
-															id,
-															new ArrayList<Integer>());
-											InstanceTraceItem item = SqliteManager
-													.getInstance()
-													.getInstanceTraceItem(
-															id,
-															new ArrayList<Integer>(),
-															length);
-											JTree tree = new JTree(item);
-											scrollPane_1.setViewportView(tree);
-											scrollPane_1.invalidate();
+											int length;
+											try {
+												length = SqliteManager
+														.getInstance()
+														.findLengthById(
+																id,
+																new ArrayList<Integer>());
+												InstanceTraceItem item = SqliteManager
+														.getInstance()
+														.getInstanceTraceItem(
+																id,
+																new ArrayList<Integer>(),
+																length);
+												JTree tree = new JTree(item);
+												scrollPane_1.setViewportView(tree);
+												scrollPane_1.invalidate();
+											} catch (SQLException e1) {
+												// TODO Auto-generated catch block
+												e1.printStackTrace();
+											}
+										}else {
+											System.out.print(object);
 										}
 									}
 								}
