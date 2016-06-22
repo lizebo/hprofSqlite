@@ -119,7 +119,7 @@ public class InstanceTraceItem implements TreeNode{
 		// TODO Auto-generated method stub
 		if (length>0) {
 			if (fieldName!=null) {
-				return name+"["+fieldName+"]"+" size:"+length+"byte";
+				return name+"["+fieldName+"]"+" size:"+length+"byte"+" id:"+id;
 			}
 			return name+" size:"+length+"byte";
 		}

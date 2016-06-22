@@ -139,6 +139,7 @@ public class LoadFileFrame extends JFrame {
 							}
 							SqliteManager.getInstance().initClassLength();
 							SqliteManager.getInstance().getTotalSize();
+							SqliteManager.getInstance().initInstanceOOM();
 							SqliteManager.getInstance().commit();
 							needRefresh = true;
 							textField_1.setText("");
