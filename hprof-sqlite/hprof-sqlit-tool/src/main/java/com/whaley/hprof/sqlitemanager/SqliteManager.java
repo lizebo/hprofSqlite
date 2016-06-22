@@ -30,6 +30,8 @@ public class SqliteManager {
 	private HashMap<Integer, List<StaticField>> classStaticFiled;
 	private HashMap<Integer, Integer> classLength;
 	private ArrayList<Integer> systemClass;
+	private HashMap<Integer, Integer> instanceToClass;
+	private HashMap<Integer, String> classForName;
 
 	private SqliteManager() {
 		classFiled = new HashMap<Integer, List<InstanceField>>();
@@ -39,6 +41,8 @@ public class SqliteManager {
 		indexValueToId = new IndexHashMap();
 		indexClassName = new HashMap<Integer, String>();
 		systemClass = new ArrayList<Integer>();
+		instanceToClass = new HashMap<Integer, Integer>();
+		classForName = new HashMap<Integer, String>();
 	}
 
 	private static synchronized void syncInit() {
@@ -98,7 +102,8 @@ public class SqliteManager {
 				int length1 = 0;
 				List<InstanceField> list = new ArrayList<InstanceField>();
 				list.addAll(temp.getInstanceFields());
-				if (temp.getClassLoaderObjectId() == 0&&tag==HeapTag.CLASS_DUMP) {
+				if (temp.getClassLoaderObjectId() == 0
+						&& tag == HeapTag.CLASS_DUMP) {
 					systemClass.add(temp.getObjectId());
 				}
 				if (temp.getSuperClassObjectId() != 0
@@ -205,7 +210,8 @@ public class SqliteManager {
 				Instance instance = (Instance) obj;
 				int instanceLength = 0;
 				if (!systemClass.contains(instance.getClassId())) {
-//					System.out.print(instance.getClassId()+"\n");
+					// System.out.print(instance.getClassId()+"\n");
+					instanceToClass.put(instance.getObjectId(), instance.getClassId());
 					List<InstanceField> list1 = classFiled.get(instance
 							.getClassId());
 					Iterator<InstanceField> iterator2 = list1.iterator();
@@ -270,18 +276,19 @@ public class SqliteManager {
 						}
 						i = i + size;
 					}
+					buffer.append("insert into ")
+							.append(SQLDOMAIN.TABLE_INSTANCE)
+							.append(" values (").append(instance.getObjectId())
+							.append(",").append(instance.getClassId())
+							.append(",").append(instance.getLength())
+							.append(",").append(instanceLength).append(");");
+					insertState = conn.prepareStatement(buffer.toString());
+					insertState.executeUpdate();
+					if (insertState != null) {
+						insertState.close();
+					}
 				}
 
-				buffer.append("insert into ").append(SQLDOMAIN.TABLE_INSTANCE)
-						.append(" values (").append(instance.getObjectId())
-						.append(",").append(instance.getClassId()).append(",")
-						.append(instance.getLength()).append(",")
-						.append(instanceLength).append(");");
-				insertState = conn.prepareStatement(buffer.toString());
-				insertState.executeUpdate();
-				if (insertState != null) {
-					insertState.close();
-				}
 				break;
 			case HeapTag.PRIMITIVE_ARRAY_DUMP:
 				buffer.append("insert into ")
@@ -361,7 +368,7 @@ public class SqliteManager {
 							+ SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD);
 			ResultSet set = indexStatement.executeQuery();
 			while (set.next()) {
-//				System.out.print("connect");
+				// System.out.print("connect");
 				int key = set.getInt("value");
 				int value = set.getInt("instance_id");
 				String fieldName = set.getString("field_name");
@@ -378,6 +385,15 @@ public class SqliteManager {
 			set.close();
 			classResultSet.close();
 			classStatement.close();
+			PreparedStatement instanceStatement = conn
+					.prepareStatement("select * from " + SQLDOMAIN.TABLE_INSTANCE);
+			ResultSet instanceResultSet = instanceStatement.executeQuery();
+			while (instanceResultSet.next()) {
+				instanceToClass.put(instanceResultSet.getInt("id"),
+						instanceResultSet.getInt("class_id"));
+			}
+			instanceResultSet.close();
+			instanceStatement.close();
 		} catch (ClassNotFoundException | SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -511,28 +527,28 @@ public class SqliteManager {
 	public ArrayList<InstanceTraceItem> findHeapMax() {
 		ArrayList<InstanceTraceItem> items = new ArrayList<InstanceTraceItem>();
 
-			PreparedStatement selectMaxState;
-			try {
-				selectMaxState = conn
-						.prepareStatement("select * from table_primitive_array order by length desc limit 10;");
-				ResultSet resultSet = selectMaxState.executeQuery();
-				while (resultSet.next()) {
-					int id = resultSet.getInt("id");
-					// traceIds.clear();
-					int length = findLengthById(id, new ArrayList<Integer>());
-					InstanceTraceItem item = getInstanceTraceItem(id,
-							new ArrayList<Integer>(), length);
-					if (item != null) {
-						items.add(item);
-					}
-					if (items.size() >= 2) {
-						break;
-					}
+		PreparedStatement selectMaxState;
+		try {
+			selectMaxState = conn
+					.prepareStatement("select * from table_primitive_array order by length desc limit 10;");
+			ResultSet resultSet = selectMaxState.executeQuery();
+			while (resultSet.next()) {
+				int id = resultSet.getInt("id");
+				// traceIds.clear();
+				int length = findLengthById(id, new ArrayList<Integer>());
+				InstanceTraceItem item = getInstanceTraceItem(id,
+						new ArrayList<Integer>(), length);
+				if (item != null) {
+					items.add(item);
 				}
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				if (items.size() >= 2) {
+					break;
+				}
 			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return items;
 	}
 
@@ -541,41 +557,24 @@ public class SqliteManager {
 	 * @return
 	 */
 	String getClassNameForInstance(int instance_id) {
-		try {
-			boolean hasData = false;
-			PreparedStatement statement = conn
-					.prepareStatement("select * from "
-							+ SQLDOMAIN.TABLE_INSTANCE + " where id = "
-							+ instance_id);
-			ResultSet instanceSet = statement.executeQuery();
-			while (instanceSet.next()) {
-				hasData = true;
-				int class_id = instanceSet.getInt("class_id");
-				return getClassNameForClass(class_id);
-				// if (indexClassName.containsKey(class_id)) {
-				// return indexClassName.get(class_id);
-				// }else {
-				// PreparedStatement classState = conn
-				// .prepareStatement("select name from "
-				// + SQLDOMAIN.TABLE_CLASS + " where id = "
-				// + class_id);
-				// ResultSet resultSet = classState.executeQuery();
-				// while (resultSet.next()) {
-				// return resultSet.getString("name");
-				// }
-				// }
-
-			}
-			if (!hasData) {
-				PreparedStatement objArrState = conn
+		if (instanceToClass != null && instanceToClass.size() > 0
+				&&instanceToClass.containsKey(instance_id)) {
+			return getClassNameForClass(instanceToClass.get(instance_id));
+		}else{
+			try {
+				boolean hasData = false;
+				PreparedStatement statement = conn
 						.prepareStatement("select * from "
-								+ SQLDOMAIN.TABLE_OBJARRAY + " where id = "
+								+ SQLDOMAIN.TABLE_INSTANCE + " where id = "
 								+ instance_id);
-				ResultSet resultset = objArrState.executeQuery();
-				while (resultset.next()) {
+				ResultSet instanceSet = statement.executeQuery();
+				while (instanceSet.next()) {
 					hasData = true;
-					int class_id = resultset.getInt("element_class_id");
+					int class_id = instanceSet.getInt("class_id");
 					return getClassNameForClass(class_id);
+					// if (indexClassName.containsKey(class_id)) {
+					// return indexClassName.get(class_id);
+					// }else {
 					// PreparedStatement classState = conn
 					// .prepareStatement("select name from "
 					// + SQLDOMAIN.TABLE_CLASS + " where id = "
@@ -584,25 +583,48 @@ public class SqliteManager {
 					// while (resultSet.next()) {
 					// return resultSet.getString("name");
 					// }
+					// }
+
 				}
-			}
-			if (!hasData) {
-				PreparedStatement priArrState = conn
-						.prepareStatement("select * from "
-								+ SQLDOMAIN.TABLE_PRIMITIVEARRAY
-								+ " where id = " + instance_id);
-				ResultSet resultset = priArrState.executeQuery();
-				while (resultset.next()) {
-					return BasicType.fromType(resultset.getInt("type"))
-							.getTypeName()
-							+ "["
-							+ resultset.getInt("length")
-							+ "]";
+				if (!hasData) {
+					PreparedStatement objArrState = conn
+							.prepareStatement("select * from "
+									+ SQLDOMAIN.TABLE_OBJARRAY + " where id = "
+									+ instance_id);
+					ResultSet resultset = objArrState.executeQuery();
+					while (resultset.next()) {
+						hasData = true;
+						int class_id = resultset.getInt("element_class_id");
+						return getClassNameForClass(class_id);
+						// PreparedStatement classState = conn
+						// .prepareStatement("select name from "
+						// + SQLDOMAIN.TABLE_CLASS + " where id = "
+						// + class_id);
+						// ResultSet resultSet = classState.executeQuery();
+						// while (resultSet.next()) {
+						// return resultSet.getString("name");
+						// }
+					}
 				}
+				if (!hasData) {
+					PreparedStatement priArrState = conn
+							.prepareStatement("select * from "
+									+ SQLDOMAIN.TABLE_PRIMITIVEARRAY
+									+ " where id = " + instance_id);
+					ResultSet resultset = priArrState.executeQuery();
+					while (resultset.next()) {
+						return BasicType.fromType(resultset.getInt("type"))
+								.getTypeName()
+								+ "["
+								+ resultset.getInt("length")
+								+ "]";
+					}
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
 			}
-		} catch (SQLException e) {
-			e.printStackTrace();
 		}
+	
 		return null;
 	}
 
@@ -873,10 +895,10 @@ public class SqliteManager {
 					PreparedStatement statement = conn
 							.prepareStatement("delete from "
 									+ SQLDOMAIN.TABLE_CLASS_INSTANCE_FIELD
-									+ " where instance_id = "+id);
+									+ " where instance_id = " + id);
 					statement.execute();
 					statement.close();
-//					System.out.print(classId);
+					// System.out.print(classId);
 				}
 				length += instanceResult.getInt("length");
 				if (length > 0) {
@@ -962,123 +984,121 @@ public class SqliteManager {
 	 * @param classId
 	 * @param traceIds
 	 * @return
-	 * @throws SQLException 
+	 * @throws SQLException
 	 */
-	public int findLengthById(int classId, List<Integer> traceIds) throws SQLException {
+	public int findLengthById(int classId, List<Integer> traceIds)
+			throws SQLException {
 		int length = 0;
 		traceIds.add(classId);
 		// level++;
-			PreparedStatement cls = conn.prepareStatement("select * from "
-					+ SQLDOMAIN.TABLE_CLASS + " where id = " + classId);
-			ResultSet clsSet = cls.executeQuery();
-			boolean hasData = false;
-			while (clsSet.next()) {
+		PreparedStatement cls = conn.prepareStatement("select * from "
+				+ SQLDOMAIN.TABLE_CLASS + " where id = " + classId);
+		ResultSet clsSet = cls.executeQuery();
+		boolean hasData = false;
+		while (clsSet.next()) {
+			hasData = true;
+			length += clsSet.getInt("length");
+			PreparedStatement insForClass = conn
+					.prepareStatement("select * from "
+							+ SQLDOMAIN.TABLE_INSTANCE + " where class_id="
+							+ classId);
+			ResultSet instances = insForClass.executeQuery();
+			while (instances.next()) {
+				int id = instances.getInt("id");
+				length += findLengthById(id, traceIds);
+			}
+			insForClass.close();
+			instances.close();
+			PreparedStatement staticAndConsForClass = conn
+					.prepareStatement("select * from "
+							+ SQLDOMAIN.INDEW_CLASS_CONS_STATIC_FIELD
+							+ " where class_id=" + classId);
+			ResultSet sAndCSet = staticAndConsForClass.executeQuery();
+			while (sAndCSet.next()) {
+				int id = sAndCSet.getInt("value");
+				length += findLengthById(id, traceIds);
+			}
+			staticAndConsForClass.close();
+			sAndCSet.close();
+		}
+		cls.close();
+		clsSet.close();
+		if (!hasData) {
+			PreparedStatement instance = conn.prepareStatement("select * from "
+					+ SQLDOMAIN.TABLE_INSTANCE + " where id = " + classId);
+			ResultSet insInfo = instance.executeQuery();
+			while (insInfo.next()) {
 				hasData = true;
-				length += clsSet.getInt("length");
 				PreparedStatement insForClass = conn
 						.prepareStatement("select * from "
-								+ SQLDOMAIN.TABLE_INSTANCE + " where class_id="
-								+ classId);
-				ResultSet instances = insForClass.executeQuery();
-				while (instances.next()) {
-					int id = instances.getInt("id");
-					length += findLengthById(id, traceIds);
+								+ SQLDOMAIN.TABLE_CLASS + " where id = "
+								+ insInfo.getInt("class_id"));
+				ResultSet inForClassSet = insForClass.executeQuery();
+				length += insInfo.getInt("length");
+				PreparedStatement insForIns = conn
+						.prepareStatement("select * from "
+								+ SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD
+								+ " where instance_id=" + classId);
+				ResultSet insSet = insForIns.executeQuery();
+				while (insSet.next()) {
+					int id = insSet.getInt("value");
+					if (traceIds.contains(id)) {
+						return length;
+					} else {
+						length += findLengthById(id, traceIds);
+					}
 				}
+				insForIns.close();
+				insSet.close();
 				insForClass.close();
-				instances.close();
-				PreparedStatement staticAndConsForClass = conn
-						.prepareStatement("select * from "
-								+ SQLDOMAIN.INDEW_CLASS_CONS_STATIC_FIELD
-								+ " where class_id=" + classId);
-				ResultSet sAndCSet = staticAndConsForClass.executeQuery();
-				while (sAndCSet.next()) {
-					int id = sAndCSet.getInt("value");
-					length += findLengthById(id, traceIds);
-				}
-				staticAndConsForClass.close();
-				sAndCSet.close();
+				inForClassSet.close();
 			}
-			cls.close();
-			clsSet.close();
+			instance.close();
+			insInfo.close();
 			if (!hasData) {
-				PreparedStatement instance = conn
+				PreparedStatement objArrState = conn
 						.prepareStatement("select * from "
-								+ SQLDOMAIN.TABLE_INSTANCE + " where id = "
+								+ SQLDOMAIN.TABLE_OBJARRAY + " where id = "
 								+ classId);
-				ResultSet insInfo = instance.executeQuery();
-				while (insInfo.next()) {
+				ResultSet objSet = objArrState.executeQuery();
+				while (objSet.next()) {
 					hasData = true;
-					PreparedStatement insForClass = conn
+					PreparedStatement objForClass = conn
 							.prepareStatement("select * from "
 									+ SQLDOMAIN.TABLE_CLASS + " where id = "
-									+ insInfo.getInt("class_id"));
-					ResultSet inForClassSet = insForClass.executeQuery();
-					length += insInfo.getInt("length");
-					PreparedStatement insForIns = conn
+									+ objSet.getInt("element_class_id"));
+					ResultSet objForClassSet = objForClass.executeQuery();
+					PreparedStatement objIndexState = conn
 							.prepareStatement("select * from "
-									+ SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD
-									+ " where instance_id=" + classId);
-					ResultSet insSet = insForIns.executeQuery();
-					while (insSet.next()) {
-						int id = insSet.getInt("value");
-						if (traceIds.contains(id)) {
-							return length;
-						} else {
-							length += findLengthById(id, traceIds);
-						}
+									+ SQLDOMAIN.TABLE_INDEX_HEAP_OBJARR_CLASS
+									+ " where id=" + classId);
+					ResultSet objIndexSet = objIndexState.executeQuery();
+					while (objIndexSet.next()) {
+						length += findLengthById(
+								objIndexSet.getInt("element_instance_id"),
+								traceIds);
 					}
-					insForIns.close();
-					insSet.close();
-					insForClass.close();
-					inForClassSet.close();
+					objForClass.close();
+					objForClassSet.close();
 				}
-				instance.close();
-				insInfo.close();
+				objArrState.close();
+				objSet.close();
 				if (!hasData) {
-					PreparedStatement objArrState = conn
+					hasData = true;
+					PreparedStatement priArrState = conn
 							.prepareStatement("select * from "
-									+ SQLDOMAIN.TABLE_OBJARRAY + " where id = "
-									+ classId);
-					ResultSet objSet = objArrState.executeQuery();
-					while (objSet.next()) {
-						hasData = true;
-						PreparedStatement objForClass = conn
-								.prepareStatement("select * from "
-										+ SQLDOMAIN.TABLE_CLASS
-										+ " where id = "
-										+ objSet.getInt("element_class_id"));
-						ResultSet objForClassSet = objForClass.executeQuery();
-						PreparedStatement objIndexState = conn
-								.prepareStatement("select * from "
-										+ SQLDOMAIN.TABLE_INDEX_HEAP_OBJARR_CLASS
-										+ " where id=" + classId);
-						ResultSet objIndexSet = objIndexState.executeQuery();
-						while (objIndexSet.next()) {
-							length += findLengthById(
-									objIndexSet.getInt("element_instance_id"),
-									traceIds);
-						}
-						objForClass.close();
-						objForClassSet.close();
+									+ SQLDOMAIN.TABLE_PRIMITIVEARRAY
+									+ " where id = " + classId);
+					ResultSet set = priArrState.executeQuery();
+					while (set.next()) {
+						length += set.getInt("length");
 					}
-					objArrState.close();
-					objSet.close();
-					if (!hasData) {
-						hasData = true;
-						PreparedStatement priArrState = conn
-								.prepareStatement("select * from "
-										+ SQLDOMAIN.TABLE_PRIMITIVEARRAY
-										+ " where id = " + classId);
-						ResultSet set = priArrState.executeQuery();
-						while (set.next()) {
-							length += set.getInt("length");
-						}
-						priArrState.close();
-						set.close();
-					}
+					priArrState.close();
+					set.close();
 				}
-
 			}
+
+		}
 
 		return length;
 	}
