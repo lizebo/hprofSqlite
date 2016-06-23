@@ -35,11 +35,11 @@ public abstract class HeapDumpBaseProcessor implements HeapDumpProcessor {
                 skip(in, 4); // Object id
                 break;
             case HeapTag.ROOT_JNI_GLOBAL:
-//                System.out.print("ROOT_JNI_GLOBAL"+"\n");
+                System.out.print("ROOT_JNI_GLOBAL"+"\n");
                 skip(in, 8); // Object id + JNI global ref
                 break;
             case HeapTag.ROOT_JNI_LOCAL:
-//                System.out.print("ROOT_JNI_LOCAL"+"\n");
+                System.out.print("ROOT_JNI_LOCAL"+"\n");
                 skip(in, 12); // Object id + thread serial + frame number
                 break;
             case HeapTag.ROOT_JAVA_FRAME:
@@ -47,7 +47,7 @@ public abstract class HeapDumpBaseProcessor implements HeapDumpProcessor {
                 skip(in, 12); // Object id + thread serial + frame number
                 break;
             case HeapTag.ROOT_NATIVE_STACK:
-//                System.out.print("ROOT_NATIVE_STACK"+"\n");
+                System.out.print("ROOT_NATIVE_STACK"+"\n");
                 skip(in, 8); // Object id + thread serial
                 break;
             case HeapTag.ROOT_STICKY_CLASS:
@@ -55,7 +55,7 @@ public abstract class HeapDumpBaseProcessor implements HeapDumpProcessor {
                 skip(in, 4); // Object id
                 break;
             case HeapTag.ROOT_THREAD_BLOCK:
-//                System.out.print("ROOT_THREAD_BLOCK"+"\n");
+                System.out.print("ROOT_THREAD_BLOCK"+"\n");
                 skip(in, 8); // Object id + thread serial
                 break;
             case HeapTag.ROOT_MONITOR_USED:

@@ -209,7 +209,8 @@ public class SqliteManager {
 					classToClassLoader.put(temp.getObjectId(),
 							temp.getClassLoaderObjectId());
 				}
-				if (temp.getClassLoaderObjectId() == 0&& tag == HeapTag.CLASS_DUMP) {
+				if (temp.getClassLoaderObjectId() == 0
+						&& tag == HeapTag.CLASS_DUMP) {
 					systemClass.add(temp.getObjectId());
 				}
 				indexClassName.put(temp.getObjectId(), rs.getString("value"));
@@ -388,8 +389,19 @@ public class SqliteManager {
 					.prepareStatement("select * from " + SQLDOMAIN.TABLE_CLASS);
 			ResultSet classResultSet = classStatement.executeQuery();
 			while (classResultSet.next()) {
-				indexClassName.put(classResultSet.getInt("id"),
-						classResultSet.getString("name"));
+				int classId = classResultSet.getInt("id");
+				int classLoaderId1 = classResultSet.getInt("class_load_id");
+				String name = classResultSet.getString("name");
+				indexClassName.put(classId, name);
+				if (name.equals("dalvik.system.PathClassLoader")) {
+					classLoaderId = classId;
+					System.out.print(name);
+				}
+				if (classLoaderId != 0) {
+					classToClassLoader.put(classId, classLoaderId1);
+				} else {
+					systemClass.add(classId);
+				}
 			}
 			indexStatement.close();
 			set.close();
@@ -400,11 +412,26 @@ public class SqliteManager {
 							+ SQLDOMAIN.TABLE_INSTANCE);
 			ResultSet instanceResultSet = instanceStatement.executeQuery();
 			while (instanceResultSet.next()) {
-				instanceToClass.put(instanceResultSet.getInt("id"),
-						instanceResultSet.getInt("class_id"));
+				int id = instanceResultSet.getInt("id");
+				int classId = instanceResultSet.getInt("class_id");
+				instanceToClass.put(id, classId);
+				if (classId == classLoaderId) {
+					classLoaderInstance = id;
+				}
+				if (!systemClass.contains(classId)) {
+					gcRootInstanceOrigin.put(id, new Instance(id, 0, classId,
+							0, null));
+				}
 			}
 			instanceResultSet.close();
 			instanceStatement.close();
+			System.out.print(gcRootInstanceOrigin.size());
+			gcRootIds.addAll(initGCRootInstance(classLoaderInstance,
+					gcRootInstanceOrigin, classToClassLoader).keySet());
+			System.out.print(gcRootIds.size());
+			System.out.print(classToClassLoader.size()+"\n");
+			System.out.print(classLoaderInstance);
+			System.out.print(classLoaderId);
 		} catch (ClassNotFoundException | SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -583,19 +610,6 @@ public class SqliteManager {
 					hasData = true;
 					int class_id = instanceSet.getInt("class_id");
 					return getClassNameForClass(class_id);
-					// if (indexClassName.containsKey(class_id)) {
-					// return indexClassName.get(class_id);
-					// }else {
-					// PreparedStatement classState = conn
-					// .prepareStatement("select name from "
-					// + SQLDOMAIN.TABLE_CLASS + " where id = "
-					// + class_id);
-					// ResultSet resultSet = classState.executeQuery();
-					// while (resultSet.next()) {
-					// return resultSet.getString("name");
-					// }
-					// }
-
 				}
 				if (!hasData) {
 					PreparedStatement objArrState = conn
@@ -607,14 +621,6 @@ public class SqliteManager {
 						hasData = true;
 						int class_id = resultset.getInt("element_class_id");
 						return getClassNameForClass(class_id);
-						// PreparedStatement classState = conn
-						// .prepareStatement("select name from "
-						// + SQLDOMAIN.TABLE_CLASS + " where id = "
-						// + class_id);
-						// ResultSet resultSet = classState.executeQuery();
-						// while (resultSet.next()) {
-						// return resultSet.getString("name");
-						// }
 					}
 				}
 				if (!hasData) {
@@ -806,8 +812,11 @@ public class SqliteManager {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+		if (traceItem.getTraceItems().size() == 0
+				&& !gcRootIds.contains(traceItem.getId())) {
+			return null;
+		}
 		if (traceItem.getName() != null) {
-			// System.out.print(traceItem.getName()+traceItem.getLength()+"\n");
 			return traceItem;
 		}
 		return null;
@@ -1228,11 +1237,13 @@ public class SqliteManager {
 		// System.out.print(oomInstance.size());
 		// // oomInstance.putAll(oomInstance2);
 		// initInstanceDB(gcRootIds);
-		gcRootInstance = initGCRootInstance(
-				classLoaderInstance, gcRootInstanceOrigin, classToClassLoader);
-		System.out.print(gcRootInstance.size()+"\n");
-		HashMap<Integer, Instance> gcLinkInstance = initGCLinkInstance(gcRootInstance, instances);
-		System.out.print(gcLinkInstance.size()+"\n");
+		gcRootInstance = initGCRootInstance(classLoaderInstance,
+				gcRootInstanceOrigin, classToClassLoader);
+		gcRootIds.addAll(gcRootInstance.keySet());
+		System.out.print(gcRootInstance.size() + "\n");
+		HashMap<Integer, Instance> gcLinkInstance = initGCLinkInstance(
+				gcRootInstance, instances);
+		System.out.print(gcLinkInstance.size() + "\n");
 		initInstanceDB(gcLinkInstance);
 	}
 
@@ -1396,7 +1407,8 @@ public class SqliteManager {
 		while (iterator.hasNext()) {
 			int id = (int) iterator.next();
 			Instance instance = origin.get(id);
-			if (classToClassloader.get(instance.getClassId())!=null&&classToClassloader.get(instance.getClassId()) == classloaderId
+			if (classToClassloader.get(instance.getClassId()) != null
+					&& classToClassloader.get(instance.getClassId()) == classloaderId
 					&& !result.containsKey(instance.getObjectId())) {
 				result.put(instance.getObjectId(), instance);
 			}
