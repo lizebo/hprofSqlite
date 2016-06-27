@@ -3,11 +3,18 @@ package com.badoo.hprof.library.heap;
 import com.badoo.hprof.library.model.BasicType;
 import com.badoo.hprof.library.model.ClassDefinition;
 import com.badoo.hprof.library.model.ConstantField;
+import com.badoo.hprof.library.model.GlobalModel;
 import com.badoo.hprof.library.model.Instance;
 import com.badoo.hprof.library.model.InstanceField;
+import com.badoo.hprof.library.model.JavaFrameModel;
+import com.badoo.hprof.library.model.LocalModel;
+import com.badoo.hprof.library.model.NativeStackModel;
 import com.badoo.hprof.library.model.ObjectArray;
 import com.badoo.hprof.library.model.PrimitiveArray;
 import com.badoo.hprof.library.model.StaticField;
+import com.badoo.hprof.library.model.StickClass;
+import com.badoo.hprof.library.model.ThreadBlock;
+import com.badoo.hprof.library.model.ThreadObjectModel;
 import com.google.common.io.CountingInputStream;
 
 import java.io.IOException;
@@ -195,6 +202,18 @@ public class HeapDumpReader {
         return new PrimitiveArray(objectId, stackTraceSerial, type, count, arrayData);
     }
 
+    
+    /**
+     * 
+     * @return
+     * @throws IOException 
+     */
+    @Nonnull
+    public int readUnKnowOrStickOrMonitor() throws IOException{
+    	int id = readInt(in);
+    	return id;
+    }
+    
     /**
      * Reads and returns an object array record;
      *
@@ -213,4 +232,46 @@ public class HeapDumpReader {
         return new ObjectArray(objectId, stackTraceSerial, elementClassId, count, elements);
     }
 
+    @Nonnull
+    public GlobalModel readGlobalModel() throws IOException{
+    	int id = readInt(in);
+    	int refId = readInt(in);
+    	return new GlobalModel(id, refId);
+    }
+    
+    @Nonnull
+    public LocalModel readLocalModel() throws IOException{
+    	int id = readInt(in);
+    	int serNum = readInt(in);
+    	int fraNum = readInt(in);
+    	return new LocalModel(id, serNum, fraNum);
+    }
+    @Nonnull
+    public JavaFrameModel readJavaFrameModel() throws IOException{
+    	int id = readInt(in);
+    	int seriNum = readInt(in);
+    	int tracNum = readInt(in);
+    	return new JavaFrameModel(id, seriNum, tracNum);
+    }
+    @Nonnull
+    public NativeStackModel readNativeStack() throws IOException{
+    	int id = readInt(in);
+    	int seriNum = readInt(in);
+    	return new NativeStackModel(id, seriNum);
+    }
+
+    @Nonnull
+    public ThreadBlock readThreadBlock() throws IOException{
+    	int id = readInt(in);
+    	int seriNum = readInt(in);
+    	return new ThreadBlock(id, seriNum);
+    }
+    
+    @Nonnull
+    public ThreadObjectModel readThreadObjectModel() throws IOException{
+    	int id = readInt(in);
+    	int serNum = readInt(in);
+    	int traceNum = readInt(in);
+    	return new ThreadObjectModel(id, serNum, traceNum);
+    }
 }

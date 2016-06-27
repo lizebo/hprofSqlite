@@ -190,7 +190,7 @@ public class HprofReader {
         heapSummary.setAllocInstanceNum(allocInstanceNum);
         return heapSummary;
     }
-
+    
     private void readRecord() throws IOException {
         int tagValue = nextTag;
         int time = readInt(in);

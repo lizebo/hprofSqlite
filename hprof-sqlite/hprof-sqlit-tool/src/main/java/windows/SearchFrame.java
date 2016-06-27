@@ -30,6 +30,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.Iterator;
 
 import javax.swing.ListSelectionModel;
@@ -49,6 +50,7 @@ public class SearchFrame extends JFrame {
 	private JTextField textField;
 	private ArrayList<String> classList;
 	private JTextField textField_1;
+	private Hashtable<Integer, InstanceTraceItem> data;
 
 	// private JFileChooser mChooser;
 
@@ -72,6 +74,8 @@ public class SearchFrame extends JFrame {
 	 * Create the frame.
 	 */
 	public SearchFrame() {
+		data = new Hashtable<Integer, InstanceTraceItem>();
+
 		setBounds(100, 100, 504, 427);
 		// mChooser = new JFileChooser();
 		contentPane = new JPanel();
@@ -191,7 +195,8 @@ public class SearchFrame extends JFrame {
 												new ArrayList<Integer>());
 								InstanceTraceItem item = SqliteManager
 										.getInstance().getInstanceTraceItem(id,
-												new ArrayList<Integer>(), length);
+												new ArrayList<Integer>(),
+												length);
 								JTree tree = new JTree(item);
 								scrollPane_1.setViewportView(tree);
 								scrollPane_1.invalidate();
@@ -209,6 +214,7 @@ public class SearchFrame extends JFrame {
 			public void actionPerformed(ActionEvent arg0) {
 				String path = textField_1.getText().trim();
 				File file = new File(path);
+				data.clear();
 				try {
 					InputStream in = new BufferedInputStream(
 							new FileInputStream(file));
@@ -227,9 +233,28 @@ public class SearchFrame extends JFrame {
 							Iterator<Integer> iterator2 = instances.iterator();
 							while (iterator2.hasNext()) {
 								int id = iterator2.next();
-								DefaultMutableTreeNode idNode = new DefaultMutableTreeNode(
-										id);
-								node.add(idNode);
+								int length;
+								try {
+									length = SqliteManager.getInstance()
+											.findLengthById(id,
+													new ArrayList<Integer>());
+									InstanceTraceItem item = SqliteManager
+											.getInstance()
+											.getInstanceTraceItem(id,
+													new ArrayList<Integer>(),
+													length);
+									if (item != null) {
+										DefaultMutableTreeNode idNode = new DefaultMutableTreeNode(
+												id);
+										node.add(idNode);
+										data.put(id, item);
+									}
+
+								} catch (SQLException e1) {
+									// TODO Auto-generated catch block
+									e1.printStackTrace();
+								}
+
 							}
 							root.add(node);
 						}
@@ -248,31 +273,39 @@ public class SearchFrame extends JFrame {
 										return;
 									Object object = node.getUserObject();
 									if (node.isLeaf()) {
-										System.out.print("valuechange");
+										// System.out.print("valuechange");
 										if (object instanceof Integer) {
-											System.out.print("Integer");
+											// System.out.print("Integer");
 											int id = (int) object;
-											int length;
-											try {
-												length = SqliteManager
-														.getInstance()
-														.findLengthById(
-																id,
-																new ArrayList<Integer>());
-												InstanceTraceItem item = SqliteManager
-														.getInstance()
-														.getInstanceTraceItem(
-																id,
-																new ArrayList<Integer>(),
-																length);
+											// int length;
+											// try {
+											// length = SqliteManager
+											// .getInstance()
+											// .findLengthById(
+											// id,
+											// new ArrayList<Integer>());
+											// InstanceTraceItem item =
+											// SqliteManager
+											// .getInstance()
+											// .getInstanceTraceItem(
+											// id,
+											// new ArrayList<Integer>(),
+											// length);
+											InstanceTraceItem item = data
+													.get(id);
+											if (item != null) {
 												JTree tree = new JTree(item);
-												scrollPane_1.setViewportView(tree);
+												scrollPane_1
+														.setViewportView(tree);
 												scrollPane_1.invalidate();
-											} catch (SQLException e1) {
-												// TODO Auto-generated catch block
-												e1.printStackTrace();
 											}
-										}else {
+
+											// } catch (SQLException e1) {
+											// // TODO Auto-generated catch
+											// block
+											// e1.printStackTrace();
+											// }
+										} else {
 											System.out.print(object);
 										}
 									}

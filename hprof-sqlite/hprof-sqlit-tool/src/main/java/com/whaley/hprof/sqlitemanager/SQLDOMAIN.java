@@ -18,4 +18,5 @@ public class SQLDOMAIN {
     public static String TABLE_CLASS_INSTANCE_FIELD = "table_class_instance_field";
     public static String TABLE_INDEX_INSTANCE_FIELD = "index_instance_field";
     public static String INDEW_CLASS_CONS_STATIC_FIELD = "index_class_static_field";
+    public static String ROOT_IDS = "table_root_ids";
 }

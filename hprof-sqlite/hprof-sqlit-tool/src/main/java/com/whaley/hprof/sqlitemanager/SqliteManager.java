@@ -10,9 +10,12 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.internal.builders.AllDefaultPossibilitiesBuilder;
 
 /**
  * Created by hc on 2016/5/20.
@@ -23,22 +26,23 @@ public class SqliteManager {
 	private int totalSize = 0;
 	private IndexHashMap indexValueToId;
 	private HashMap<Integer, String> indexClassName;
-	private int classLoaderId;
-	private int classLoaderInstance;
+//	private int classLoaderId;
+//	private int classLoaderInstance;
 
 	private HashMap<Integer, List<InstanceField>> classFiled;
 	private HashMap<Integer, List<ConstantField>> classConstantFiled;
 	private HashMap<Integer, List<StaticField>> classStaticFiled;
 	private HashMap<Integer, Integer> classLength;
-	private ArrayList<Integer> systemClass;
+//	private ArrayList<Integer> systemClass;
 	private HashMap<Integer, Integer> instanceToClass;
 	private HashMap<Integer, String> classForName;
 	private HashMap<Integer, Instance> finalizersInstances;
 	private HashMap<Integer, Instance> instances;
-	private HashMap<Integer, Instance> gcRootInstanceOrigin;
-	private HashSet<Integer> gcRootIds;
-	private HashMap<Integer, Integer> classToClassLoader;
+//	private HashMap<Integer, Instance> gcRootInstanceOrigin;
+//	private HashSet<Integer> gcRootIds;
+//	private HashMap<Integer, Integer> classToClassLoader;
 	private HashMap<Integer, Instance> gcRootInstance;
+	private Hashtable<Integer, String> gcRoot;
 
 	private SqliteManager() {
 		classFiled = new HashMap<Integer, List<InstanceField>>();
@@ -47,18 +51,16 @@ public class SqliteManager {
 		classLength = new HashMap<Integer, Integer>();
 		indexValueToId = new IndexHashMap();
 		indexClassName = new HashMap<Integer, String>();
-		systemClass = new ArrayList<Integer>();
+//		systemClass = new ArrayList<Integer>();
 		instanceToClass = new HashMap<Integer, Integer>();
 		classForName = new HashMap<Integer, String>();
 		finalizersInstances = new HashMap<Integer, Instance>();
-		// oomInstance = new HashMap<Integer, Instance>();
-		// oomInstance2 = new HashMap<Integer, Instance>();
-		// unOomInstance = new HashMap<Integer, Instance>();
-		// systemInstance = new HashMap<Integer, Instance>();
-		gcRootInstanceOrigin = new HashMap<Integer, Instance>();
-		gcRootIds = new HashSet<Integer>();
+//		gcRootInstanceOrigin = new HashMap<Integer, Instance>();
+		gcRootInstance = new HashMap<Integer, Instance>();
+//		gcRootIds = new HashSet<Integer>();
 		instances = new HashMap<Integer, Instance>();
-		classToClassLoader = new HashMap<Integer, Integer>();
+//		classToClassLoader = new HashMap<Integer, Integer>();
+		gcRoot = new Hashtable<Integer, String>();
 	}
 
 	private static synchronized void syncInit() {
@@ -85,6 +87,7 @@ public class SqliteManager {
 		try {
 			conn.setAutoCommit(false);
 			switch (tag) {
+
 			case Tag.STRING:
 				buffer.append("insert into ").append(SQLDOMAIN.TABLE_STRING)
 						.append(" values (")
@@ -96,254 +99,9 @@ public class SqliteManager {
 					insertState.close();
 				}
 				break;
-			case HeapTag.CLASS_DUMP:
-				StringBuilder delete = new StringBuilder("DELETE FROM ")
-						.append(SQLDOMAIN.TABLE_CLASS).append(" WHERE id=")
-						.append(((ClassDefinition) obj).getObjectId())
-						.append(";");
-				PreparedStatement deleteState = conn.prepareStatement(delete
-						.toString());
-				deleteState.executeUpdate();
-				deleteState.close();
 			case Tag.LOAD_CLASS:
-				PreparedStatement select = conn
-						.prepareStatement(new StringBuilder("select * from ")
-								.append(SQLDOMAIN.TABLE_STRING)
-								.append(" where id=")
-								.append(((ClassDefinition) obj)
-										.getNameStringId()).append(";")
-								.toString());
-				ResultSet rs = select.executeQuery();
-				ClassDefinition temp = (ClassDefinition) obj;
-				int length1 = 0;
-				List<InstanceField> list = new ArrayList<InstanceField>();
-				list.addAll(temp.getInstanceFields());
-				if (temp.getSuperClassObjectId() != 0
-						&& classFiled.get(temp.getSuperClassObjectId()) != null)
-					list.addAll(classFiled.get(temp.getSuperClassObjectId()));
-				classFiled.put(temp.getObjectId(), list);
-				Iterator<ConstantField> constantFieldIterator = temp
-						.getConstantFields().iterator();
-				Iterator<StaticField> staticFieldIterator = temp
-						.getStaticFields().iterator();
-				int cl = 0;
-				i = 0;
-				while (constantFieldIterator.hasNext()) {
-					ConstantField constantField = constantFieldIterator.next();
-					int type = (Integer) constantField.getType().type;
-					if (type == 2) {
-						int value = Utils.byteArrayToInt(
-								constantField.getValue(), i);
-						gcRootIds.add(value);
-						if (value != 0) {
-							PreparedStatement statement = conn
-									.prepareStatement(new StringBuilder(
-											"insert into ")
-											.append(SQLDOMAIN.INDEW_CLASS_CONS_STATIC_FIELD)
-											.append(" (class_id,type,value) values (")
-											.append(temp.getObjectId())
-											.append(",").append(type)
-											.append(",").append("?")
-											.append(");").toString());
-							statement.setInt(1, value);
-							statement.executeUpdate();
-							statement.close();
-						}
-					} else {
-						cl += constantField.getValue().length;
-					}
-				}
-				while (staticFieldIterator.hasNext()) {
-					StaticField staticField = staticFieldIterator.next();
-					int type = staticField.getType().type;
-					if (type == 2) {
-						int value = Utils.byteArrayToInt(
-								staticField.getValue(), i);
-						gcRootIds.add(value);
-						int id = staticField.getFieldNameId();
-
-						PreparedStatement stringStatement = conn
-								.prepareStatement(new StringBuilder(
-										"select * from ")
-										.append(SQLDOMAIN.TABLE_STRING)
-										.append(" where id=").append(id)
-										.append(";").toString());
-						ResultSet stringSet = stringStatement.executeQuery();
-						String fieldName = null;
-						if (stringSet.next()) {
-							fieldName = stringSet.getString("value");
-						}
-						stringStatement.close();
-						stringSet.close();
-						if (value != 0) {
-							PreparedStatement statement = conn
-									.prepareStatement(new StringBuilder(
-											"insert into ")
-											.append(SQLDOMAIN.INDEW_CLASS_CONS_STATIC_FIELD)
-											.append(" (class_id,type,value,field_name) values (")
-											.append(temp.getObjectId())
-											.append(",").append(type)
-											.append(",").append("?")
-											.append(",").append("?")
-											.append(");").toString());
-							statement.setInt(1, value);
-							statement.setString(2, fieldName);
-							statement.executeUpdate();
-							statement.close();
-							indexValueToId.put(value, temp.getObjectId(),
-									fieldName);
-						} else {
-							cl += staticField.getValue().length;
-						}
-					}
-					classLength.put(temp.getObjectId(), cl);
-				}
-				// if (rs.getString("value").contains("java.lang.ref."))
-				// referenceClass.add(temp.getObjectId());
-				if (rs.getString("value").equals(
-						"dalvik.system.PathClassLoader")) {
-					classLoaderId = temp.getObjectId();
-				}
-				if (temp.getClassLoaderObjectId() != 0
-						&& tag == HeapTag.CLASS_DUMP) {
-					classToClassLoader.put(temp.getObjectId(),
-							temp.getClassLoaderObjectId());
-				}
-				if (temp.getClassLoaderObjectId() == 0
-						&& tag == HeapTag.CLASS_DUMP) {
-					systemClass.add(temp.getObjectId());
-				}
-				indexClassName.put(temp.getObjectId(), rs.getString("value"));
-				buffer.append("insert into ").append(SQLDOMAIN.TABLE_CLASS)
-						.append(" values (").append(temp.getObjectId())
-						.append(",").append("'").append(rs.getString("value"))
-						.append("'").append(",")
-						.append(temp.getSuperClassObjectId()).append(",")
-						.append(temp.getClassLoaderObjectId()).append(",")
-						.append(temp.getSignersObjectId()).append(",")
-						.append(temp.getProtectionDomainObjectId()).append(",")
-						.append(temp.getInstanceSize()).append(",")
-						.append(temp.getLength()).append(");");
-				insertState = conn.prepareStatement(buffer.toString());
-				insertState.executeUpdate();
-				if (insertState != null) {
-					insertState.close();
-				}
-				select.close();
-				rs.close();
-				break;
-			case HeapTag.INSTANCE_DUMP:
-				Instance instance = (Instance) obj;
-				instances.put(instance.getObjectId(), instance);
-				if (!systemClass.contains(instance.getClassId())) {
-					gcRootInstanceOrigin.put(instance.getObjectId(), instance);
-				}
-				int instanceLength = 0;
-				// if (gcRootIds.contains(instance.getObjectId())) {
-				// gcRootInstance.put(instance.getObjectId(), instance);
-				// }
-				// if (referenceClass.contains(instance.getClassId())) {
-				// break;
-				// }
-				if (instance.getClassId() == classLoaderId) {
-					classLoaderInstance = instance.getObjectId();
-				}
-				buffer.append("insert into ").append(SQLDOMAIN.TABLE_INSTANCE)
-						.append(" values (").append(instance.getObjectId())
-						.append(",").append(instance.getClassId()).append(",")
-						.append(instance.getLength()).append(",")
-						.append(instanceLength).append(");");
-				insertState = conn.prepareStatement(buffer.toString());
-				insertState.executeUpdate();
-				insertState.close();
-				// if (classFiled.containsKey(instance.getClassId())) {
-				// List<InstanceField> list1 = classFiled.get(instance
-				// .getClassId());
-				// Iterator<InstanceField> iterator2 = list1.iterator();
-				// ArrayList types = new ArrayList();
-				// ArrayList sizes = new ArrayList();
-				// while (iterator2.hasNext()) {
-				// InstanceField field = iterator2.next();
-				// BasicType type = field.getType();
-				// types.add(type.type);
-				// sizes.add(type.size);
-				// }
-				// if (types.contains(2)) {
-				// if
-				// (systemClass.contains(instance.getClassId())&&!gcRootIds.contains(instance.getObjectId()))
-				// {
-				// gcRootIds.add(instance.getObjectId());
-				// }
-				// }
-				// Iterator typeIterator = types.iterator();
-				// Iterator iterator1 = sizes.iterator();
-				// byte[] bytes = instance.getInstanceFieldData();
-				// i = 0;
-				// while (i < bytes.length && typeIterator.hasNext()) {
-				// int typeItem = (Integer) typeIterator.next();
-				// int size = (Integer) iterator1.next();
-				// if (typeItem == 2) {
-				// int value = Utils.byteArrayToInt(bytes, i);
-				// if (value != 0) {
-				// if
-				// (gcRootIds.contains(instance.getObjectId())&&!gcRootIds.contains(value))
-				// {
-				// gcRootIds.add(value);
-				// }
-				// }
-				// }
-				// i = i + size;
-				// }
-				//
-				// }
-
-				break;
-			case HeapTag.PRIMITIVE_ARRAY_DUMP:
-				buffer.append("insert into ")
-						.append(SQLDOMAIN.TABLE_PRIMITIVEARRAY)
-						.append(" values(")
-						.append(((PrimitiveArray) obj).getObjectId())
-						.append(",")
-						.append(((PrimitiveArray) obj).getType().type)
-						.append(",")
-						.append(((PrimitiveArray) obj).getArrayData().length)
-						.append(");");
-				insertState = conn.prepareStatement(buffer.toString());
-				insertState.executeUpdate();
-				if (insertState != null) {
-					insertState.close();
-				}
-				break;
-			case HeapTag.OBJECT_ARRAY_DUMP:
-				ObjectArray objectArray = (ObjectArray) obj;
-				int num = objectArray.getCount();
-				for (i = 0; i < num && objectArray.getElements()[i] != 0; i++) {
-					StringBuilder buffer1 = new StringBuilder("insert into ")
-							.append(SQLDOMAIN.TABLE_INDEX_HEAP_OBJARR_CLASS)
-							.append(" values(")
-							.append(objectArray.getObjectId()).append(",")
-							.append(objectArray.getElements()[i]).append(",")
-							.append(0).append(");");
-					PreparedStatement statement = conn.prepareStatement(buffer1
-							.toString());
-					statement.executeUpdate();
-					if (gcRootIds.contains(objectArray.getObjectId())) {
-						gcRootIds.add(objectArray.getElements()[i]);
-					}
-				}
-				buffer.append("insert into ").append(SQLDOMAIN.TABLE_OBJARRAY)
-						.append(" values(").append(objectArray.getObjectId())
-						.append(",").append(objectArray.getElementClassId())
-						.append(",").append(objectArray.getCount()).append(",")
-						.append(0).append(");");
-				insertState = conn.prepareStatement(buffer.toString());
-				insertState.executeUpdate();
-				if (insertState != null) {
-					insertState.close();
-				}
 				break;
 			}
-
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -393,15 +151,6 @@ public class SqliteManager {
 				int classLoaderId1 = classResultSet.getInt("class_load_id");
 				String name = classResultSet.getString("name");
 				indexClassName.put(classId, name);
-				if (name.equals("dalvik.system.PathClassLoader")) {
-					classLoaderId = classId;
-					System.out.print(name);
-				}
-				if (classLoaderId != 0) {
-					classToClassLoader.put(classId, classLoaderId1);
-				} else {
-					systemClass.add(classId);
-				}
 			}
 			indexStatement.close();
 			set.close();
@@ -415,23 +164,18 @@ public class SqliteManager {
 				int id = instanceResultSet.getInt("id");
 				int classId = instanceResultSet.getInt("class_id");
 				instanceToClass.put(id, classId);
-				if (classId == classLoaderId) {
-					classLoaderInstance = id;
-				}
-				if (!systemClass.contains(classId)) {
-					gcRootInstanceOrigin.put(id, new Instance(id, 0, classId,
-							0, null));
-				}
+				Instance temp =  new Instance(id, 0, classId,
+						0, null);
+				instances.put(id, temp);
 			}
 			instanceResultSet.close();
 			instanceStatement.close();
-			System.out.print(gcRootInstanceOrigin.size());
-			gcRootIds.addAll(initGCRootInstance(classLoaderInstance,
-					gcRootInstanceOrigin, classToClassLoader).keySet());
-			System.out.print(gcRootIds.size());
-			System.out.print(classToClassLoader.size()+"\n");
-			System.out.print(classLoaderInstance);
-			System.out.print(classLoaderId);
+			PreparedStatement gcRootStatement = conn.prepareStatement("select * from "+SQLDOMAIN.ROOT_IDS);
+			ResultSet gcSet = gcRootStatement.executeQuery();
+			while (gcSet.next()) {
+				gcRoot.put(gcSet.getInt("id"), gcSet.getString("type"));
+				
+			}
 		} catch (ClassNotFoundException | SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -538,6 +282,16 @@ public class SqliteManager {
 							+ "(class_id int, type int,value,field_name)");
 			createClassField.executeUpdate();
 			createClassField.close();
+			PreparedStatement dropRootIds = conn
+					.prepareStatement("drop table if exists "
+							+ SQLDOMAIN.ROOT_IDS);
+			dropRootIds.execute();
+			dropRootIds.close();
+			PreparedStatement createRootIds = conn
+					.prepareStatement("create table " + SQLDOMAIN.ROOT_IDS
+							+ "(id int primary key,type)");
+			createRootIds.execute();
+			createRootIds.close();
 			conn.commit();
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
@@ -711,6 +465,13 @@ public class SqliteManager {
 		if (traceIds.contains(id)) {
 			return null;
 		}
+		if (gcRoot.containsKey(id)) {
+			String name = getClassNameForInstance(id)+ " root:"+gcRoot.get(id);
+			if (name != null) {
+				traceItem.setName(name);
+			}
+			return traceItem;
+		}
 		traceIds.add(id);
 		try {
 			boolean hasData = false;
@@ -725,9 +486,6 @@ public class SqliteManager {
 						traceItem.setFieldName((String) entry.getValue());
 						String name = getClassNameForInstance(id);
 						if (name != null) {
-							if (name.equals("java.lang.ref.FinalizerReference")) {
-								return null;
-							}
 							traceItem.setName(name);
 							InstanceTraceItem temp = getInstanceTraceItem(
 									temp_id, traceIds, length);
@@ -738,30 +496,30 @@ public class SqliteManager {
 					}
 				}
 			} else {
-				PreparedStatement state = conn
-						.prepareStatement("select instance_id from "
-								+ SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD
-								+ " where value = " + id);
-				ResultSet set = state.executeQuery();
-				while (set.next()) {
-					hasData = true;
-					int temp_id = set.getInt("instance_id");
-					String name = getClassNameForInstance(id);
-					if (name != null) {
-						if (name.equals("java.lang.ref.FinalizerReference")) {
-							return null;
+				if (gcRoot.containsKey(id)) {
+					PreparedStatement state = conn
+							.prepareStatement("select instance_id from "
+									+ SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD
+									+ " where value = " + id);
+					ResultSet set = state.executeQuery();
+					while (set.next()) {
+						hasData = true;
+						int temp_id = set.getInt("instance_id");
+						String name = getClassNameForInstance(id)+ "root:"+gcRoot.get(id);
+						if (name != null) {
+							traceItem.setName(name);
+							InstanceTraceItem temp = getInstanceTraceItem(temp_id,
+									traceIds, length);
+							if (temp != null) {
+								traceItem.addTrace(temp);
+							}
 						}
-						traceItem.setName(name);
-						InstanceTraceItem temp = getInstanceTraceItem(temp_id,
-								traceIds, length);
-						if (temp != null) {
-							traceItem.addTrace(temp);
-						}
-					}
 
+					}
+				}else {
+					return null;
 				}
 			}
-
 			if (!hasData) {
 				PreparedStatement statement = conn
 						.prepareStatement("select id from "
@@ -773,9 +531,6 @@ public class SqliteManager {
 					int objId = objSet.getInt("id");
 					String name = getClassNameForInstance(id);
 					if (name != null) {
-						if (name.equals("java.lang.ref.FinalizerReference")) {
-							return null;
-						}
 						traceItem.setName(name);
 						InstanceTraceItem temp = getInstanceTraceItem(objId,
 								traceIds, length);
@@ -813,7 +568,7 @@ public class SqliteManager {
 			e.printStackTrace();
 		}
 		if (traceItem.getTraceItems().size() == 0
-				&& !gcRootIds.contains(traceItem.getId())) {
+				&& !gcRoot.containsKey(traceItem.getId())) {
 			return null;
 		}
 		if (traceItem.getName() != null) {
@@ -910,15 +665,15 @@ public class SqliteManager {
 			while (instanceResult.next()) {
 				hasInstance = true;
 				int classId = instanceResult.getInt("class_id");
-				if (systemClass.contains(classId)) {
-					PreparedStatement statement = conn
-							.prepareStatement("delete from "
-									+ SQLDOMAIN.TABLE_CLASS_INSTANCE_FIELD
-									+ " where instance_id = " + id);
-					statement.execute();
-					statement.close();
-					// System.out.print(classId);
-				}
+//				if (systemClass.contains(classId)) {
+//					PreparedStatement statement = conn
+//							.prepareStatement("delete from "
+//									+ SQLDOMAIN.TABLE_CLASS_INSTANCE_FIELD
+//									+ " where instance_id = " + id);
+//					statement.execute();
+//					statement.close();
+//					// System.out.print(classId);
+//				}
 				length += instanceResult.getInt("length");
 				if (length > 0) {
 					return length;
@@ -997,6 +752,274 @@ public class SqliteManager {
 			e.printStackTrace();
 		}
 		return length;
+	}
+
+	public void insertHeapData(int tag, Object obj) {
+		try {
+			int id;
+			StringBuilder buffer = new StringBuilder();
+			PreparedStatement insertState = null;
+			int i;
+			switch (tag) {
+			case HeapTag.ROOT_UNKNOWN:
+				id = (int) obj;
+				gcRoot.put(id, "unknow root");
+				insertState = conn.prepareStatement("insert into "
+						+ SQLDOMAIN.ROOT_IDS + " values(" + id + ","
+						+ "\"unknow root\"" + ");");
+				insertState.executeUpdate();
+				insertState.close();
+				System.out.print("ROOT_UNKNOWN" + "\n");
+				break;
+			case HeapTag.ROOT_JNI_GLOBAL:
+				id = ((GlobalModel) obj).getId();
+				gcRoot.put(id, "global property");
+				insertState = conn.prepareStatement("insert into "
+						+ SQLDOMAIN.ROOT_IDS + " values(" + id + ","
+						+ "\"global property\"" + ");");
+				insertState.executeUpdate();
+				insertState.close();
+				System.out.print("ROOT_JNI_GLOBAL" + "\n");
+				break;
+			case HeapTag.ROOT_JNI_LOCAL:
+				id = ((LocalModel) obj).getId();
+				gcRoot.put(id, "local property");
+				insertState = conn.prepareStatement("insert into "
+						+ SQLDOMAIN.ROOT_IDS + " values(" + id + ","
+						+ "\"local property\"" + ");");
+				insertState.executeUpdate();
+				insertState.close();
+				System.out.print("ROOT_JNI_LOCAL" + "\n");
+				break;
+			case HeapTag.ROOT_JAVA_FRAME:
+				id = ((JavaFrameModel) obj).getId();
+				gcRoot.put(id, "java frame");
+				insertState = conn.prepareStatement("insert into "
+						+ SQLDOMAIN.ROOT_IDS + " values(" + id + ","
+						+ "\"java frame\"" + ");");
+				insertState.executeUpdate();
+				insertState.close();
+				System.out.print("ROOT_JAVA_FRAME" + "\n");
+				break;
+			case HeapTag.ROOT_NATIVE_STACK:
+				id = ((NativeStackModel) obj).getId();
+				gcRoot.put(id, "native stack");
+				insertState = conn.prepareStatement("insert into "
+						+ SQLDOMAIN.ROOT_IDS + " values(" + id + ","
+						+ "\"native stack\"" + ");");
+				insertState.executeUpdate();
+				insertState.close();
+				System.out.print("ROOT_NATIVE_STACK" + "\n");
+				break;
+			case HeapTag.ROOT_STICKY_CLASS:
+				id = (int) obj;
+				gcRoot.put(id, "system class");
+				insertState = conn.prepareStatement("insert into "
+						+ SQLDOMAIN.ROOT_IDS + " values(" + id + ","
+						+ "\"system class\"" + ");");
+				insertState.executeUpdate();
+				insertState.close();
+				System.out.print("ROOT_STICKY_CLASS" + "\n");
+				break;
+			case HeapTag.ROOT_THREAD_BLOCK:
+				id = ((ThreadBlock) obj).getId();
+				gcRoot.put(id, "thread block");
+				insertState = conn.prepareStatement("insert into "
+						+ SQLDOMAIN.ROOT_IDS + " values(" + id + ","
+						+ "\"thread block\"" + ");");
+				insertState.executeUpdate();
+				insertState.close();
+				System.out.print("ROOT_THREAD_BLOCK" + "\n");
+				break;
+			case HeapTag.ROOT_MONITOR_USED:
+				id = (int) obj;
+				gcRoot.put(id, "monistor");
+				insertState = conn.prepareStatement("insert into "
+						+ SQLDOMAIN.ROOT_IDS + " values(" + id + ","
+						+ "\"monistor\"" + ");");
+				insertState.executeUpdate();
+				insertState.close();
+				System.out.print("ROOT_MONITOR_USED" + "\n");
+				break;
+			case HeapTag.ROOT_THREAD_OBJECT:
+				id = ((ThreadObjectModel) obj).getId();
+				gcRoot.put(id, "thread");
+				insertState = conn.prepareStatement("insert into "
+						+ SQLDOMAIN.ROOT_IDS + " values(" + id + ","
+						+ "\"thread\"" + ");");
+				insertState.executeUpdate();
+				insertState.close();
+				System.out.print("ROOT_THREAD_OBJECT" + "\n");
+				break;
+			case HeapTag.INSTANCE_DUMP:
+				Instance instance = (Instance) obj;
+				instances.put(instance.getObjectId(), instance);
+				int instanceLength = 0;
+				buffer.append("insert into ").append(SQLDOMAIN.TABLE_INSTANCE)
+						.append(" values (").append(instance.getObjectId())
+						.append(",").append(instance.getClassId()).append(",")
+						.append(instance.getLength()).append(",")
+						.append(instanceLength).append(");");
+				insertState = conn.prepareStatement(buffer.toString());
+				insertState.executeUpdate();
+				insertState.close();
+				break;
+			case HeapTag.PRIMITIVE_ARRAY_DUMP:
+				buffer.append("insert into ")
+						.append(SQLDOMAIN.TABLE_PRIMITIVEARRAY)
+						.append(" values(")
+						.append(((PrimitiveArray) obj).getObjectId())
+						.append(",")
+						.append(((PrimitiveArray) obj).getType().type)
+						.append(",")
+						.append(((PrimitiveArray) obj).getArrayData().length)
+						.append(");");
+				insertState = conn.prepareStatement(buffer.toString());
+				insertState.executeUpdate();
+				if (insertState != null) {
+					insertState.close();
+				}
+				break;
+			case HeapTag.OBJECT_ARRAY_DUMP:
+				ObjectArray objectArray = (ObjectArray) obj;
+				int num = objectArray.getCount();
+				for (i = 0; i < num && objectArray.getElements()[i] != 0; i++) {
+					StringBuilder buffer1 = new StringBuilder("insert into ")
+							.append(SQLDOMAIN.TABLE_INDEX_HEAP_OBJARR_CLASS)
+							.append(" values(")
+							.append(objectArray.getObjectId()).append(",")
+							.append(objectArray.getElements()[i]).append(",")
+							.append(0).append(");");
+					PreparedStatement statement = conn.prepareStatement(buffer1
+							.toString());
+					statement.executeUpdate();
+				}
+				buffer.append("insert into ").append(SQLDOMAIN.TABLE_OBJARRAY)
+						.append(" values(").append(objectArray.getObjectId())
+						.append(",").append(objectArray.getElementClassId())
+						.append(",").append(objectArray.getCount()).append(",")
+						.append(0).append(");");
+				insertState = conn.prepareStatement(buffer.toString());
+				insertState.executeUpdate();
+				if (insertState != null) {
+					insertState.close();
+				}
+				break;
+			case HeapTag.CLASS_DUMP:
+				PreparedStatement select = conn
+						.prepareStatement(new StringBuilder("select * from ")
+								.append(SQLDOMAIN.TABLE_STRING)
+								.append(" where id=")
+								.append(((ClassDefinition) obj)
+										.getNameStringId()).append(";")
+								.toString());
+				ResultSet rs = select.executeQuery();
+				ClassDefinition temp = (ClassDefinition) obj;
+				int length1 = 0;
+				List<InstanceField> list = new ArrayList<InstanceField>();
+				list.addAll(temp.getInstanceFields());
+				if (temp.getSuperClassObjectId() != 0
+						&& classFiled.get(temp.getSuperClassObjectId()) != null)
+					list.addAll(classFiled.get(temp.getSuperClassObjectId()));
+				classFiled.put(temp.getObjectId(), list);
+				Iterator<ConstantField> constantFieldIterator = temp
+						.getConstantFields().iterator();
+				Iterator<StaticField> staticFieldIterator = temp
+						.getStaticFields().iterator();
+				int cl = 0;
+				i = 0;
+				while (constantFieldIterator.hasNext()) {
+					ConstantField constantField = constantFieldIterator.next();
+					int type = (Integer) constantField.getType().type;
+					if (type == 2) {
+						int value = Utils.byteArrayToInt(
+								constantField.getValue(), i);
+						if (value != 0) {
+							PreparedStatement statement = conn
+									.prepareStatement(new StringBuilder(
+											"insert into ")
+											.append(SQLDOMAIN.INDEW_CLASS_CONS_STATIC_FIELD)
+											.append(" (class_id,type,value) values (")
+											.append(temp.getObjectId())
+											.append(",").append(type)
+											.append(",").append("?")
+											.append(");").toString());
+							statement.setInt(1, value);
+							statement.executeUpdate();
+							statement.close();
+						}
+					} else {
+						cl += constantField.getValue().length;
+					}
+				}
+				while (staticFieldIterator.hasNext()) {
+					StaticField staticField = staticFieldIterator.next();
+					int type = staticField.getType().type;
+					if (type == 2) {
+						int value = Utils.byteArrayToInt(
+								staticField.getValue(), i);
+//						gcRootIds.add(value);
+						id = staticField.getFieldNameId();
+
+						PreparedStatement stringStatement = conn
+								.prepareStatement(new StringBuilder(
+										"select * from ")
+										.append(SQLDOMAIN.TABLE_STRING)
+										.append(" where id=").append(id)
+										.append(";").toString());
+						ResultSet stringSet = stringStatement.executeQuery();
+						String fieldName = null;
+						if (stringSet.next()) {
+							fieldName = stringSet.getString("value");
+						}
+						stringStatement.close();
+						stringSet.close();
+						if (value != 0) {
+							PreparedStatement statement = conn
+									.prepareStatement(new StringBuilder(
+											"insert into ")
+											.append(SQLDOMAIN.INDEW_CLASS_CONS_STATIC_FIELD)
+											.append(" (class_id,type,value,field_name) values (")
+											.append(temp.getObjectId())
+											.append(",").append(type)
+											.append(",").append("?")
+											.append(",").append("?")
+											.append(");").toString());
+							statement.setInt(1, value);
+							statement.setString(2, fieldName);
+							statement.executeUpdate();
+							statement.close();
+						} else {
+							cl += staticField.getValue().length;
+						}
+					}
+					classLength.put(temp.getObjectId(), cl);
+				}
+				indexClassName.put(temp.getObjectId(), rs.getString("value"));
+				buffer.append("insert into ").append(SQLDOMAIN.TABLE_CLASS)
+						.append(" values (").append(temp.getObjectId())
+						.append(",").append("'").append(rs.getString("value"))
+						.append("'").append(",")
+						.append(temp.getSuperClassObjectId()).append(",")
+						.append(temp.getClassLoaderObjectId()).append(",")
+						.append(temp.getSignersObjectId()).append(",")
+						.append(temp.getProtectionDomainObjectId()).append(",")
+						.append(temp.getInstanceSize()).append(",")
+						.append(temp.getLength()).append(");");
+				insertState = conn.prepareStatement(buffer.toString());
+				insertState.executeUpdate();
+				if (insertState != null) {
+					insertState.close();
+				}
+				select.close();
+				rs.close();
+				break;
+			}
+		} catch (SQLException e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}
+
 	}
 
 	/**
@@ -1210,195 +1233,14 @@ public class SqliteManager {
 	}
 
 	public void initInstanceOOM() {
-		System.out.print(gcRootInstanceOrigin.size() + "\n");
 		System.out.print(instances.size() + "\n");
-		System.out.print(systemClass.size() + "\n");
-		// oomInstance.putAll(finalizersInstances);
-		// Iterator iterator = finalizersInstances.keySet().iterator();
-		// System.out.print(oomInstance.size() + "\n");
-		// System.out.print(finalizersInstances.size() + "\n");
-		// while (iterator.hasNext()) {
-		// int instanceId = (int) iterator.next();
-		// checkInstanceForRef(instanceId,new ArrayList<Integer>());
-		// }
-		// System.out.print(oomInstance.size() + "\n");
-		// Iterator iterator2 = oomInstance.keySet().iterator();
-		// while (iterator2.hasNext()) {
-		// int id = (int) iterator2.next();
-		// Instance instance = oomInstance.get(id);
-		// checkInstanceForOOM(instance, new ArrayList<Integer>());
-		// }
-		// System.out.print(oomInstance2.size() + "\n");
-		// for (Integer key : oomInstance2.keySet()) {
-		// if (!oomInstane.containsKey(key)) {
-		// oomInstance.put(key, oomInstance2.get(key));
-		// }
-		// }
-		// System.out.print(oomInstance.size());
-		// // oomInstance.putAll(oomInstance2);
-		// initInstanceDB(gcRootIds);
-		gcRootInstance = initGCRootInstance(classLoaderInstance,
-				gcRootInstanceOrigin, classToClassLoader);
-		gcRootIds.addAll(gcRootInstance.keySet());
-		System.out.print(gcRootInstance.size() + "\n");
 		HashMap<Integer, Instance> gcLinkInstance = initGCLinkInstance(
-				gcRootInstance, instances);
+				gcRoot, instances);
 		System.out.print(gcLinkInstance.size() + "\n");
-		initInstanceDB(gcLinkInstance);
+		initInstanceDB(gcRootInstance);
 	}
 
-	//
-	// private void checkInstanceForRef(int instanceId,ArrayList<Integer> trace)
-	// {
-	// if (trace.contains(instanceId)) {
-	// return;
-	// }
-	// trace.add(instanceId);
-	// if (oomInstance.containsKey(instanceId)) {
-	// Instance temp = oomInstance.get(instanceId);
-	// oomInstance.remove(instanceId);
-	// unOomInstance.put(instanceId, temp);
-	// if (classFiled.containsKey(temp.getClassId())) {
-	// List<InstanceField> list1 = classFiled.get(temp.getClassId());
-	// Iterator<InstanceField> iterator2 = list1.iterator();
-	// ArrayList types = new ArrayList();
-	// ArrayList sizes = new ArrayList();
-	// ArrayList fieldNames = new ArrayList();
-	// while (iterator2.hasNext()) {
-	// InstanceField field = iterator2.next();
-	// BasicType type = field.getType();
-	// types.add(type.type);
-	// sizes.add(type.size);
-	// }
-	// Iterator iterator = types.iterator();
-	// Iterator iterator1 = sizes.iterator();
-	// byte[] bytes = temp.getInstanceFieldData();
-	// int i = 0;
-	// while (i < bytes.length && iterator.hasNext()) {
-	// int type = (Integer) iterator.next();
-	// int size = (Integer) iterator1.next();
-	// if (type == 2) {
-	// int value = Utils.byteArrayToInt(bytes, i);
-	// if (value != 0 &&
-	// (oomInstance.containsKey(value)||systemInstance.containsKey(value))) {
-	// checkInstanceForRef(value,trace);
-	// }
-	// }
-	// i = i + size;
-	// }
-	// }
-	// }else if (systemInstance.containsKey(instanceId)) {
-	// Instance temp = systemInstance.get(instanceId);
-	// systemInstance.remove(instanceId);
-	// unOomInstance.put(instanceId, temp);
-	// if (classFiled.containsKey(temp.getClassId())) {
-	// List<InstanceField> list1 = classFiled.get(temp.getClassId());
-	// Iterator<InstanceField> iterator2 = list1.iterator();
-	// ArrayList types = new ArrayList();
-	// ArrayList sizes = new ArrayList();
-	// ArrayList fieldNames = new ArrayList();
-	// while (iterator2.hasNext()) {
-	// InstanceField field = iterator2.next();
-	// BasicType type = field.getType();
-	// types.add(type.type);
-	// sizes.add(type.size);
-	// }
-	// Iterator iterator = types.iterator();
-	// Iterator iterator1 = sizes.iterator();
-	// byte[] bytes = temp.getInstanceFieldData();
-	// int i = 0;
-	// while (i < bytes.length && iterator.hasNext()) {
-	// int type = (Integer) iterator.next();
-	// int size = (Integer) iterator1.next();
-	// if (type == 2) {
-	// int value = Utils.byteArrayToInt(bytes, i);
-	// if (value != 0 &&
-	// (oomInstance.containsKey(value)||systemInstance.containsKey(value))) {
-	// checkInstanceForRef(value,trace);
-	// }
-	// }
-	// i = i + size;
-	// }
-	// }
-	// }
-	// try {
-	// PreparedStatement indexObjArr = conn
-	// .prepareStatement("select * from "
-	// + SQLDOMAIN.TABLE_INDEX_HEAP_OBJARR_CLASS
-	// + " where id = " + instanceId);
-	// ResultSet indexObjSet = indexObjArr.executeQuery();
-	// while (indexObjSet.next()) {
-	// System.out.print("array");
-	// checkInstanceForRef(indexObjSet.getInt("element_instance_id"),trace);
-	// }
-	// indexObjSet.close();
-	// indexObjArr.close();
-	// } catch (SQLException e) {
-	// // TODO Auto-generated catch block
-	// e.printStackTrace();
-	// }
-	// }
-	//
-	// private void checkInstanceForOOM(Instance instance,
-	// ArrayList<Integer> traces) {
-	// if (traces.contains(instance.getObjectId())) {
-	// return;
-	// }
-	// traces.add(instance.getObjectId());
-	// // Instance temp = oomInstance.get(instanceId);
-	// if (classFiled.containsKey(instance.getClassId())) {
-	// List<InstanceField> list1 = classFiled.get(instance.getClassId());
-	// Iterator<InstanceField> iterator2 = list1.iterator();
-	// ArrayList types = new ArrayList();
-	// ArrayList sizes = new ArrayList();
-	// ArrayList fieldNames = new ArrayList();
-	// while (iterator2.hasNext()) {
-	// InstanceField field = iterator2.next();
-	// BasicType type = field.getType();
-	// types.add(type.type);
-	// sizes.add(type.size);
-	// }
-	// Iterator iterator = types.iterator();
-	// Iterator iterator1 = sizes.iterator();
-	// byte[] bytes = instance.getInstanceFieldData();
-	// int i = 0;
-	// while (i < bytes.length && iterator.hasNext()) {
-	// int type = (Integer) iterator.next();
-	// int size = (Integer) iterator1.next();
-	// if (type == 2) {
-	// int value = Utils.byteArrayToInt(bytes, i);
-	// if (value != 0) {
-	// if(traces.contains(value)){
-	// if (systemInstance.containsKey(instance.getObjectId())) {
-	// systemInstance.remove(instance.getObjectId());
-	// }
-	// return;
-	// }
-	// if (value==1137572496) {
-	// System.out.print(instance.getObjectId()+"/n");
-	// }
-	// if (!oomInstance.containsKey(value)
-	// &&
-	// !oomInstance2.containsKey(value)&&!finalizersInstances.containsKey(value))
-	// {
-	// if (systemInstance.containsKey(value)) {
-	// Instance temp = systemInstance.get(value);
-	// oomInstance2.put(value, temp);
-	// checkInstanceForOOM(temp, traces);
-	// } else if (unOomInstance.containsKey(value)) {
-	// Instance temp = unOomInstance.get(value);
-	// unOomInstance.remove(value);
-	// oomInstance2.put(value, temp);
-	// checkInstanceForOOM(temp, traces);
-	// }
-	// }
-	// }
-	// }
-	// i = i + size;
-	// }
-	// }
-	// }
-	//
+
 	private HashMap<Integer, Instance> initGCRootInstance(int classloaderId,
 			HashMap<Integer, Instance> origin,
 			HashMap<Integer, Integer> classToClassloader) {
@@ -1454,6 +1296,56 @@ public class SqliteManager {
 		return result;
 	}
 
+	private HashMap<Integer, Instance> initGCLinkInstance(
+			Hashtable<Integer, String> origin, HashMap<Integer, Instance> all) {
+		HashMap<Integer, Instance> result = new HashMap<Integer, Instance>();
+		Iterator iterator = origin.keySet().iterator();
+		while (iterator.hasNext()) {
+			int key = (int) iterator.next();
+			initInstanceTrace(key, all, new ArrayList<Integer>());
+		}
+		return result;
+		
+	}
+
+	private void initInstanceTrace(int id,HashMap<Integer, Instance> all,ArrayList<Integer> trace){
+		if (trace.contains(id)) {
+			return;
+		}
+		int key = id;
+		Instance instance = all.get(key);
+		if (instance != null) {
+			List<InstanceField> instanceFields = classFiled.get(instance
+					.getClassId());
+			Iterator<InstanceField> fieldIterator = instanceFields
+					.iterator();
+			ArrayList types = new ArrayList();
+			ArrayList sizes = new ArrayList();
+			while (fieldIterator.hasNext()) {
+				InstanceField field = fieldIterator.next();
+				BasicType type = field.getType();
+				types.add(type.type);
+				sizes.add(type.size);
+			}
+			Iterator typeIterator = types.iterator();
+			Iterator iterator1 = sizes.iterator();
+			byte[] bytes = instance.getInstanceFieldData();
+			int i = 0;
+			while (i < bytes.length && typeIterator.hasNext()) {
+				int typeItem = (Integer) typeIterator.next();
+				int size = (Integer) iterator1.next();
+				if (typeItem == 2) {
+					int value = Utils.byteArrayToInt(bytes, i);
+					if (value != 0 && !gcRootInstance.containsKey(value)
+							&& all.containsKey(value)) {
+						gcRootInstance.put(value, all.get(value));
+						initInstanceTrace(value,all,trace);
+					}
+				}
+				i = i + size;
+			}
+		}
+	}
 	private void initInstanceDB(HashMap<Integer, Instance> oomMap) {
 		Iterator iterator = oomMap.keySet().iterator();
 		System.out.print(oomMap.size());
@@ -1543,16 +1435,11 @@ public class SqliteManager {
 
 	private void initInstanceDB(HashSet<Integer> list) {
 		Iterator iterator = list.iterator();
-
-		// System.out.print(list.size());
 		while (iterator.hasNext()) {
 			int instanceLength = 0;
 			int key = (int) iterator.next();
 			Instance instance = instances.get(key);
 			if (instance != null) {
-				// if (referenceClass.contains(instance.getClassId())) {
-				// continue;
-				// }
 				try {
 
 					instanceToClass.put(instance.getObjectId(),
@@ -1630,7 +1517,6 @@ public class SqliteManager {
 					insertState.executeUpdate();
 					insertState.close();
 				} catch (SQLException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
