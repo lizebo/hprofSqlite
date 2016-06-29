@@ -24,43 +24,57 @@ public class SqliteManager {
 	private static SqliteManager instance = null;
 	Connection conn = null;
 	private int totalSize = 0;
-	private IndexHashMap indexValueToId;
+	private IndexHashMap instanceMap;
+	private IndexHashMap classMap;
+	private IndexHashMap arrMap;
 	private HashMap<Integer, String> indexClassName;
-//	private int classLoaderId;
-//	private int classLoaderInstance;
+	// private int classLoaderId;
+	// private int classLoaderInstance;
 
 	private HashMap<Integer, List<InstanceField>> classFiled;
-	private HashMap<Integer, List<ConstantField>> classConstantFiled;
-	private HashMap<Integer, List<StaticField>> classStaticFiled;
+	private IndexHashMap objArrIndex;
+	// private HashMap<Integer, List<ConstantField>> classConstantFiled;
+	// private HashMap<Integer, List<StaticField>> classStaticFiled;
 	private HashMap<Integer, Integer> classLength;
-//	private ArrayList<Integer> systemClass;
+	// private ArrayList<Integer> systemClass;
 	private HashMap<Integer, Integer> instanceToClass;
 	private HashMap<Integer, String> classForName;
+	private HashSet<Integer> referClasses;
 	private HashMap<Integer, Instance> finalizersInstances;
 	private HashMap<Integer, Instance> instances;
-//	private HashMap<Integer, Instance> gcRootInstanceOrigin;
-//	private HashSet<Integer> gcRootIds;
-//	private HashMap<Integer, Integer> classToClassLoader;
 	private HashMap<Integer, Instance> gcRootInstance;
 	private Hashtable<Integer, String> gcRoot;
+	
+	HashSet<IndexMap> instanceRefMap;
+
+	// private Hashtable<Integer, InstanceTraceItem> instanceIndexMap;
 
 	private SqliteManager() {
 		classFiled = new HashMap<Integer, List<InstanceField>>();
-		classConstantFiled = new HashMap<Integer, List<ConstantField>>();
-		classStaticFiled = new HashMap<Integer, List<StaticField>>();
+		// classConstantFiled = new HashMap<Integer, List<ConstantField>>();
+		// classStaticFiled = new HashMap<Integer, List<StaticField>>();
+		
 		classLength = new HashMap<Integer, Integer>();
-		indexValueToId = new IndexHashMap();
+		instanceMap = new IndexHashMap();
+		classMap = new IndexHashMap();
+		arrMap = new IndexHashMap();
+		
 		indexClassName = new HashMap<Integer, String>();
-//		systemClass = new ArrayList<Integer>();
+		referClasses = new HashSet<Integer>();
+		// systemClass = new ArrayList<Integer>();
 		instanceToClass = new HashMap<Integer, Integer>();
 		classForName = new HashMap<Integer, String>();
 		finalizersInstances = new HashMap<Integer, Instance>();
-//		gcRootInstanceOrigin = new HashMap<Integer, Instance>();
+		// gcRootInstanceOrigin = new HashMap<Integer, Instance>();
 		gcRootInstance = new HashMap<Integer, Instance>();
-//		gcRootIds = new HashSet<Integer>();
+		// gcRootIds = new HashSet<Integer>();
 		instances = new HashMap<Integer, Instance>();
-//		classToClassLoader = new HashMap<Integer, Integer>();
+		// classToClassLoader = new HashMap<Integer, Integer>();
 		gcRoot = new Hashtable<Integer, String>();
+		
+		objArrIndex = new IndexHashMap();
+		instanceRefMap = new HashSet<IndexMap>();
+		// instanceIndexMap = new Hashtable<Integer, InstanceTraceItem>();
 	}
 
 	private static synchronized void syncInit() {
@@ -141,7 +155,7 @@ public class SqliteManager {
 				int key = set.getInt("value");
 				int value = set.getInt("instance_id");
 				String fieldName = set.getString("field_name");
-				indexValueToId.put(key, value, fieldName);
+//				indexValueToId.put(key, value, fieldName);
 			}
 			PreparedStatement classStatement = conn
 					.prepareStatement("select * from " + SQLDOMAIN.TABLE_CLASS);
@@ -164,17 +178,17 @@ public class SqliteManager {
 				int id = instanceResultSet.getInt("id");
 				int classId = instanceResultSet.getInt("class_id");
 				instanceToClass.put(id, classId);
-				Instance temp =  new Instance(id, 0, classId,
-						0, null);
+				Instance temp = new Instance(id, 0, classId, 0, null);
 				instances.put(id, temp);
 			}
 			instanceResultSet.close();
 			instanceStatement.close();
-			PreparedStatement gcRootStatement = conn.prepareStatement("select * from "+SQLDOMAIN.ROOT_IDS);
+			PreparedStatement gcRootStatement = conn
+					.prepareStatement("select * from " + SQLDOMAIN.ROOT_IDS);
 			ResultSet gcSet = gcRootStatement.executeQuery();
 			while (gcSet.next()) {
 				gcRoot.put(gcSet.getInt("id"), gcSet.getString("type"));
-				
+
 			}
 		} catch (ClassNotFoundException | SQLException e) {
 			// TODO Auto-generated catch block
@@ -289,7 +303,7 @@ public class SqliteManager {
 			dropRootIds.close();
 			PreparedStatement createRootIds = conn
 					.prepareStatement("create table " + SQLDOMAIN.ROOT_IDS
-							+ "(id int primary key,type)");
+							+ "(id int,type)");
 			createRootIds.execute();
 			createRootIds.close();
 			conn.commit();
@@ -465,60 +479,105 @@ public class SqliteManager {
 		if (traceIds.contains(id)) {
 			return null;
 		}
+		if (finalizersInstances.containsKey(id)) {
+			return null;
+		}
 		if (gcRoot.containsKey(id)) {
-			String name = getClassNameForInstance(id)+ " root:"+gcRoot.get(id);
+			String name = getClassNameForInstance(id) + " root:"
+					+ gcRoot.get(id);
 			if (name != null) {
 				traceItem.setName(name);
 			}
 			return traceItem;
 		}
+
 		traceIds.add(id);
 		try {
 			boolean hasData = false;
-			if (indexValueToId.size() > 0) {
-				HashMap<Integer, String> item = indexValueToId.get(id);
+
+			if (instanceMap.size() > 0) {
+				HashMap<Integer, String> item = instanceMap.get(id);
 				if (item != null && item.size() > 0) {
-					hasData = true;
 					Iterator iterator = item.entrySet().iterator();
 					while (iterator.hasNext()) {
 						Map.Entry entry = (Map.Entry) iterator.next();
 						int temp_id = (int) entry.getKey();
+						if (temp_id == 1134802728) {
+							System.out.print(id + "sys5\n");
+						}
 						traceItem.setFieldName((String) entry.getValue());
 						String name = getClassNameForInstance(id);
 						if (name != null) {
 							traceItem.setName(name);
+							if (temp_id == 1134802728) {
+								System.out.print(temp_id + "sys6\n");
+							}
 							InstanceTraceItem temp = getInstanceTraceItem(
 									temp_id, traceIds, length);
+							if (temp_id == 1134802728) {
+								System.out.print(temp_id + "sys4\n");
+							}
 							if (temp != null) {
+								if (temp_id == 1134802728) {
+									System.out.print(temp_id + "sys7\n");
+								}
 								traceItem.addTrace(temp);
 							}
 						}
 					}
+					hasData = true;
 				}
 			} else {
-				if (gcRoot.containsKey(id)) {
-					PreparedStatement state = conn
-							.prepareStatement("select instance_id from "
-									+ SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD
-									+ " where value = " + id);
-					ResultSet set = state.executeQuery();
-					while (set.next()) {
-						hasData = true;
-						int temp_id = set.getInt("instance_id");
-						String name = getClassNameForInstance(id)+ "root:"+gcRoot.get(id);
-						if (name != null) {
-							traceItem.setName(name);
-							InstanceTraceItem temp = getInstanceTraceItem(temp_id,
-									traceIds, length);
-							if (temp != null) {
-								traceItem.addTrace(temp);
-							}
+				// if (gcRoot.containsKey(id)) {
+				PreparedStatement state = conn
+						.prepareStatement("select instance_id from "
+								+ SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD
+								+ " where value = " + id);
+				ResultSet set = state.executeQuery();
+				while (set.next()) {
+					hasData = true;
+					int temp_id = set.getInt("instance_id");
+					String name = getClassNameForInstance(id) + "root:"
+							+ gcRoot.get(id);
+					if (name != null) {
+						traceItem.setName(name);
+						InstanceTraceItem temp = getInstanceTraceItem(temp_id,
+								traceIds, length);
+						if (temp != null) {
+							traceItem.addTrace(temp);
 						}
-
 					}
-				}else {
-					return null;
+
 				}
+				// } else {
+				// return null;
+				// }
+			}
+			if (classMap.containsKey(id)) {
+				hasData= true;
+				HashMap<Integer, String> temp = classMap.get(id);
+				Iterator<Integer> iterator = temp.keySet().iterator();
+				while (iterator.hasNext()) {
+					InstanceTraceItem item = new InstanceTraceItem();
+					Integer key = iterator.next();
+					item.setId(key);
+					if (id == 1134802728) {
+						System.out.print(key + "sys2\n");
+					}
+					if (gcRoot.containsKey(key)) {
+						if (id == 1134802728) {
+							System.out.print(key + "sys3\n");
+						}
+						String name = getClassNameForClass(key) + " root:"
+								+ gcRoot.get(key);
+						item.setName(name);
+						item.setFieldName(temp.get(key));
+						traceItem.addTrace(item);
+						traceItem.setName(getClassNameForInstance(id));
+					}
+
+				}
+				return traceItem;
 			}
 			if (!hasData) {
 				PreparedStatement statement = conn
@@ -541,23 +600,6 @@ public class SqliteManager {
 					}
 					statement.close();
 					objSet.close();
-				}
-				if (!hasData) {
-					hasData = true;
-					PreparedStatement classState = conn
-							.prepareStatement("select * from "
-									+ SQLDOMAIN.INDEW_CLASS_CONS_STATIC_FIELD
-									+ " where value=" + id);
-					ResultSet classSet = classState.executeQuery();
-					while (classSet.next()) {
-						String className = getClassNameForClass(classSet
-								.getInt("class_id"));
-						traceItem.setName(className);
-						traceItem
-								.setFieldName(classSet.getString("field_name"));
-					}
-					classSet.close();
-					classState.close();
 				}
 				if (!hasData) {
 					String className = getClassNameForClass(id);
@@ -665,15 +707,6 @@ public class SqliteManager {
 			while (instanceResult.next()) {
 				hasInstance = true;
 				int classId = instanceResult.getInt("class_id");
-//				if (systemClass.contains(classId)) {
-//					PreparedStatement statement = conn
-//							.prepareStatement("delete from "
-//									+ SQLDOMAIN.TABLE_CLASS_INSTANCE_FIELD
-//									+ " where instance_id = " + id);
-//					statement.execute();
-//					statement.close();
-//					// System.out.print(classId);
-//				}
 				length += instanceResult.getInt("length");
 				if (length > 0) {
 					return length;
@@ -769,7 +802,6 @@ public class SqliteManager {
 						+ "\"unknow root\"" + ");");
 				insertState.executeUpdate();
 				insertState.close();
-				System.out.print("ROOT_UNKNOWN" + "\n");
 				break;
 			case HeapTag.ROOT_JNI_GLOBAL:
 				id = ((GlobalModel) obj).getId();
@@ -779,7 +811,6 @@ public class SqliteManager {
 						+ "\"global property\"" + ");");
 				insertState.executeUpdate();
 				insertState.close();
-				System.out.print("ROOT_JNI_GLOBAL" + "\n");
 				break;
 			case HeapTag.ROOT_JNI_LOCAL:
 				id = ((LocalModel) obj).getId();
@@ -789,7 +820,6 @@ public class SqliteManager {
 						+ "\"local property\"" + ");");
 				insertState.executeUpdate();
 				insertState.close();
-				System.out.print("ROOT_JNI_LOCAL" + "\n");
 				break;
 			case HeapTag.ROOT_JAVA_FRAME:
 				id = ((JavaFrameModel) obj).getId();
@@ -799,7 +829,6 @@ public class SqliteManager {
 						+ "\"java frame\"" + ");");
 				insertState.executeUpdate();
 				insertState.close();
-				System.out.print("ROOT_JAVA_FRAME" + "\n");
 				break;
 			case HeapTag.ROOT_NATIVE_STACK:
 				id = ((NativeStackModel) obj).getId();
@@ -809,7 +838,6 @@ public class SqliteManager {
 						+ "\"native stack\"" + ");");
 				insertState.executeUpdate();
 				insertState.close();
-				System.out.print("ROOT_NATIVE_STACK" + "\n");
 				break;
 			case HeapTag.ROOT_STICKY_CLASS:
 				id = (int) obj;
@@ -819,7 +847,6 @@ public class SqliteManager {
 						+ "\"system class\"" + ");");
 				insertState.executeUpdate();
 				insertState.close();
-				System.out.print("ROOT_STICKY_CLASS" + "\n");
 				break;
 			case HeapTag.ROOT_THREAD_BLOCK:
 				id = ((ThreadBlock) obj).getId();
@@ -829,7 +856,6 @@ public class SqliteManager {
 						+ "\"thread block\"" + ");");
 				insertState.executeUpdate();
 				insertState.close();
-				System.out.print("ROOT_THREAD_BLOCK" + "\n");
 				break;
 			case HeapTag.ROOT_MONITOR_USED:
 				id = (int) obj;
@@ -849,12 +875,15 @@ public class SqliteManager {
 						+ "\"thread\"" + ");");
 				insertState.executeUpdate();
 				insertState.close();
-				System.out.print("ROOT_THREAD_OBJECT" + "\n");
+				System.out.print("ROOT_THREAD_OBJECT" + id + "\n");
 				break;
 			case HeapTag.INSTANCE_DUMP:
 				Instance instance = (Instance) obj;
 				instances.put(instance.getObjectId(), instance);
 				int instanceLength = 0;
+				if (referClasses.contains(instance.getClassId())) {
+					finalizersInstances.put(instance.getObjectId(), instance);
+				}
 				buffer.append("insert into ").append(SQLDOMAIN.TABLE_INSTANCE)
 						.append(" values (").append(instance.getObjectId())
 						.append(",").append(instance.getClassId()).append(",")
@@ -893,6 +922,7 @@ public class SqliteManager {
 					PreparedStatement statement = conn.prepareStatement(buffer1
 							.toString());
 					statement.executeUpdate();
+					objArrIndex.put(objectArray.getObjectId(), objectArray.getElements()[i],"["+i+"]");
 				}
 				buffer.append("insert into ").append(SQLDOMAIN.TABLE_OBJARRAY)
 						.append(" values(").append(objectArray.getObjectId())
@@ -914,7 +944,12 @@ public class SqliteManager {
 										.getNameStringId()).append(";")
 								.toString());
 				ResultSet rs = select.executeQuery();
+				String name = rs.getString("value");
+
 				ClassDefinition temp = (ClassDefinition) obj;
+				if (name.contains("java.lang.ref.")) {
+					referClasses.add(temp.getObjectId());
+				}
 				int length1 = 0;
 				List<InstanceField> list = new ArrayList<InstanceField>();
 				list.addAll(temp.getInstanceFields());
@@ -935,6 +970,9 @@ public class SqliteManager {
 						int value = Utils.byteArrayToInt(
 								constantField.getValue(), i);
 						if (value != 0) {
+							// classStaticVariMap.put(value,
+							// temp.getObjectId(),);
+							instanceRefMap.add(new IndexMap(temp.getObjectId(),value,"unknow",IndexMap.TYPE_CLASS));
 							PreparedStatement statement = conn
 									.prepareStatement(new StringBuilder(
 											"insert into ")
@@ -958,7 +996,7 @@ public class SqliteManager {
 					if (type == 2) {
 						int value = Utils.byteArrayToInt(
 								staticField.getValue(), i);
-//						gcRootIds.add(value);
+						// gcRootIds.add(value);
 						id = staticField.getFieldNameId();
 
 						PreparedStatement stringStatement = conn
@@ -972,9 +1010,12 @@ public class SqliteManager {
 						if (stringSet.next()) {
 							fieldName = stringSet.getString("value");
 						}
+//						classMap.put(value, temp.getObjectId(),
+//								fieldName);
 						stringStatement.close();
 						stringSet.close();
 						if (value != 0) {
+							instanceRefMap.add(new IndexMap(temp.getObjectId(),value,fieldName,IndexMap.TYPE_CLASS));
 							PreparedStatement statement = conn
 									.prepareStatement(new StringBuilder(
 											"insert into ")
@@ -995,16 +1036,15 @@ public class SqliteManager {
 					}
 					classLength.put(temp.getObjectId(), cl);
 				}
-				indexClassName.put(temp.getObjectId(), rs.getString("value"));
+				indexClassName.put(temp.getObjectId(), name);
 				buffer.append("insert into ").append(SQLDOMAIN.TABLE_CLASS)
 						.append(" values (").append(temp.getObjectId())
-						.append(",").append("'").append(rs.getString("value"))
-						.append("'").append(",")
-						.append(temp.getSuperClassObjectId()).append(",")
-						.append(temp.getClassLoaderObjectId()).append(",")
-						.append(temp.getSignersObjectId()).append(",")
-						.append(temp.getProtectionDomainObjectId()).append(",")
-						.append(temp.getInstanceSize()).append(",")
+						.append(",").append("'").append(name).append("'")
+						.append(",").append(temp.getSuperClassObjectId())
+						.append(",").append(temp.getClassLoaderObjectId())
+						.append(",").append(temp.getSignersObjectId())
+						.append(",").append(temp.getProtectionDomainObjectId())
+						.append(",").append(temp.getInstanceSize()).append(",")
 						.append(temp.getLength()).append(");");
 				insertState = conn.prepareStatement(buffer.toString());
 				insertState.executeUpdate();
@@ -1017,7 +1057,7 @@ public class SqliteManager {
 			}
 		} catch (SQLException e) {
 			// TODO: handle exception
-			e.printStackTrace();
+			// e.printStackTrace();
 		}
 
 	}
@@ -1234,29 +1274,12 @@ public class SqliteManager {
 
 	public void initInstanceOOM() {
 		System.out.print(instances.size() + "\n");
-		HashMap<Integer, Instance> gcLinkInstance = initGCLinkInstance(
-				gcRoot, instances);
+		HashMap<Integer, Instance> gcLinkInstance = initGCLinkInstance(gcRoot,
+				instances);
 		System.out.print(gcLinkInstance.size() + "\n");
-		initInstanceDB(gcRootInstance);
+		initInstanceDB(instanceRefMap);
 	}
 
-
-	private HashMap<Integer, Instance> initGCRootInstance(int classloaderId,
-			HashMap<Integer, Instance> origin,
-			HashMap<Integer, Integer> classToClassloader) {
-		HashMap<Integer, Instance> result = new HashMap<Integer, Instance>();
-		Iterator iterator = origin.keySet().iterator();
-		while (iterator.hasNext()) {
-			int id = (int) iterator.next();
-			Instance instance = origin.get(id);
-			if (classToClassloader.get(instance.getClassId()) != null
-					&& classToClassloader.get(instance.getClassId()) == classloaderId
-					&& !result.containsKey(instance.getObjectId())) {
-				result.put(instance.getObjectId(), instance);
-			}
-		}
-		return result;
-	}
 
 	private HashMap<Integer, Instance> initGCLinkInstance(
 			HashMap<Integer, Instance> origin, HashMap<Integer, Instance> all) {
@@ -1304,75 +1327,53 @@ public class SqliteManager {
 			int key = (int) iterator.next();
 			initInstanceTrace(key, all, new ArrayList<Integer>());
 		}
+		Iterator<Integer> iterator2 = classMap.keySet().iterator();
+		while (iterator2.hasNext()) {
+			int instanceId = iterator2.next();
+			HashMap<Integer, String> temp = classMap.get(instanceId);
+			Iterator iterator3 = temp.keySet().iterator();
+			while (iterator3.hasNext()) {
+				int classId = (int) iterator3.next();
+				if (gcRoot.containsKey(classId)) {
+					if (instanceId == 1134802728) {
+						System.out.print(1134802728);
+					}
+					gcRootInstance.put(instanceId, all.get(instanceId));
+					initInstanceTrace(instanceId, all, new ArrayList<Integer>());
+					// System.out.print(instanceId+"\n");
+				}
+			}
+		}
 		return result;
-		
+
 	}
 
-	private void initInstanceTrace(int id,HashMap<Integer, Instance> all,ArrayList<Integer> trace){
+	private void initInstanceTrace(int id, HashMap<Integer, Instance> all,
+			ArrayList<Integer> trace) {
 		if (trace.contains(id)) {
 			return;
 		}
-		int key = id;
-		Instance instance = all.get(key);
+		if (finalizersInstances.containsKey(id)) {
+			return;
+		}
+		Instance instance = all.get(id);
 		if (instance != null) {
+
 			List<InstanceField> instanceFields = classFiled.get(instance
 					.getClassId());
-			Iterator<InstanceField> fieldIterator = instanceFields
-					.iterator();
+			Iterator<InstanceField> fieldIterator = instanceFields.iterator();
 			ArrayList types = new ArrayList();
 			ArrayList sizes = new ArrayList();
+			ArrayList<String> fieldNames = new ArrayList<String>();
 			while (fieldIterator.hasNext()) {
 				InstanceField field = fieldIterator.next();
 				BasicType type = field.getType();
-				types.add(type.type);
-				sizes.add(type.size);
-			}
-			Iterator typeIterator = types.iterator();
-			Iterator iterator1 = sizes.iterator();
-			byte[] bytes = instance.getInstanceFieldData();
-			int i = 0;
-			while (i < bytes.length && typeIterator.hasNext()) {
-				int typeItem = (Integer) typeIterator.next();
-				int size = (Integer) iterator1.next();
-				if (typeItem == 2) {
-					int value = Utils.byteArrayToInt(bytes, i);
-					if (value != 0 && !gcRootInstance.containsKey(value)
-							&& all.containsKey(value)) {
-						gcRootInstance.put(value, all.get(value));
-						initInstanceTrace(value,all,trace);
-					}
-				}
-				i = i + size;
-			}
-		}
-	}
-	private void initInstanceDB(HashMap<Integer, Instance> oomMap) {
-		Iterator iterator = oomMap.keySet().iterator();
-		System.out.print(oomMap.size());
-		while (iterator.hasNext()) {
-			int instanceLength = 0;
-			int key = (int) iterator.next();
-			Instance instance = oomMap.get(key);
-			try {
-
-				instanceToClass.put(instance.getObjectId(),
-						instance.getClassId());
-				List<InstanceField> list1 = classFiled.get(instance
-						.getClassId());
-				Iterator<InstanceField> iterator2 = list1.iterator();
-				ArrayList types = new ArrayList();
-				ArrayList sizes = new ArrayList();
-				ArrayList fieldNames = new ArrayList();
-				while (iterator2.hasNext()) {
-					InstanceField field = iterator2.next();
-					BasicType type = field.getType();
-					types.add(type.type);
-					sizes.add(type.size);
-					int id = field.getFieldNameId();
-					PreparedStatement stringStatement;
+				int StringId = field.getFieldNameId();
+				PreparedStatement stringStatement;
+				try {
 					stringStatement = conn.prepareStatement(new StringBuilder(
 							"select * from ").append(SQLDOMAIN.TABLE_STRING)
-							.append(" where id=").append(id).append(";")
+							.append(" where id=").append(StringId).append(";")
 							.toString());
 					ResultSet stringSet = stringStatement.executeQuery();
 					if (stringSet.next()) {
@@ -1380,149 +1381,255 @@ public class SqliteManager {
 					}
 					stringStatement.close();
 					stringSet.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
-				Iterator typeIterator = types.iterator();
-				Iterator iterator1 = sizes.iterator();
-				Iterator nameIterator = fieldNames.iterator();
-				byte[] bytes = instance.getInstanceFieldData();
-				int i = 0;
-				while (i < bytes.length && typeIterator.hasNext()) {
-					int typeItem = (Integer) typeIterator.next();
-					int size = (Integer) iterator1.next();
-					String fieldName = (String) nameIterator.next();
-					if (typeItem == 2) {
-						int value = Utils.byteArrayToInt(bytes, i);
-						if (value != 0 && oomMap.containsKey(value)) {
-							PreparedStatement statement = conn
-									.prepareStatement(new StringBuilder(
-											"insert into ")
-											.append(SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD)
-											.append(" (instance_id,type,value,field_name) values (")
-											.append(instance.getObjectId())
-											.append(",").append(typeItem)
-											.append(",").append("?")
-											.append(",").append("?")
-											.append(");").toString());
-							statement.setInt(1, value);
-							statement.setString(2, fieldName);
-							statement.executeUpdate();
-							statement.close();
-							indexValueToId.put(value, instance.getObjectId(),
-									fieldName);
-							// }
-						}
-					} else {
-						instanceLength += size;
+				types.add(type.type);
+				sizes.add(type.size);
+			}
+			Iterator typeIterator = types.iterator();
+			Iterator iterator1 = sizes.iterator();
+			Iterator nameIterator = fieldNames.iterator();
+			byte[] bytes = instance.getInstanceFieldData();
+			int i = 0;
+			while (i < bytes.length && typeIterator.hasNext()) {
+				int typeItem = (Integer) typeIterator.next();
+				int size = (Integer) iterator1.next();
+				String name = (String) nameIterator.next();
+				if (typeItem == 2) {
+					int value = Utils.byteArrayToInt(bytes, i);
+					if (value != 0 && !gcRootInstance.containsKey(value)
+							&& all.containsKey(value)) {
+						gcRootInstance.put(value, all.get(value));
+						instanceRefMap.add(new IndexMap(id,value,name,IndexMap.TYPE_INSTANCE));
+						initInstanceTrace(value, all, trace);
 					}
-					i = i + size;
 				}
-				StringBuffer buffer = new StringBuffer().append("insert into ")
-						.append(SQLDOMAIN.TABLE_INSTANCE).append(" values (")
-						.append(instance.getObjectId()).append(",")
-						.append(instance.getClassId()).append(",")
-						.append(instance.getLength()).append(",")
-						.append(instanceLength).append(");");
-				PreparedStatement insertState = conn.prepareStatement(buffer
-						.toString());
-				insertState.executeUpdate();
-				insertState.close();
+				i = i + size;
+			}
+		}else if (objArrIndex.containsKey(id)) {
+			HashMap<Integer, String> temp = objArrIndex.get(id);
+			Iterator<Integer> iterator = temp.keySet().iterator();
+			while (iterator.hasNext()) {
+				int key = iterator.next();
+				instanceRefMap.add(new IndexMap(id,key,"["+temp.size()+"]",IndexMap.TYPE_ARR));
+				initInstanceTrace(key, all, trace);
+			}
+		}
+	}
+
+	private void initInstanceDB(HashSet<IndexMap> temp) {
+//		Iterator iterator = oomMap.keySet().iterator();
+		Iterator<IndexMap> iterator = temp.iterator();
+		while (iterator.hasNext()) {
+			IndexMap map = iterator.next();
+			PreparedStatement statement;
+			try {
+				int type = map.type;
+				switch (type) {
+				case IndexMap.TYPE_INSTANCE:
+					
+					break;
+					
+				case IndexMap.TYPE_ARR:
+					break;
+				case IndexMap.TYPE_CLASS:
+					break;
+
+				default:
+					break;
+				}
+				statement = conn
+						.prepareStatement(new StringBuilder("insert into ")
+								.append(SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD)
+								.append(" (instance_id,type,value,field_name) values (")
+								.append(map.key).append(",")
+								.append(map.type).append(",").append(map.value)
+								.append(",").append("?").append(");").toString());
+				statement.setString(1, map.fieldname);
+				statement.executeUpdate();
+				statement.close();
+				instanceMap.put(map.value, map.key, map.fieldname);
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			}
+		}
+	private void initInstanceDB(HashMap<Integer, Instance> oomMap) {
+//		Iterator iterator = oomMap.keySet().iterator();
+		Iterator<IndexMap> iterator = instanceRefMap.iterator();
+		while (iterator.hasNext()) {
+			IndexMap map = iterator.next();
+			PreparedStatement statement;
+			try {
+				int type = map.type;
+				switch (type) {
+				case IndexMap.TYPE_INSTANCE:
+					
+					break;
+					
+				case IndexMap.TYPE_ARR:
+					break;
+				case IndexMap.TYPE_CLASS:
+					break;
+
+				default:
+					break;
+				}
+				statement = conn
+						.prepareStatement(new StringBuilder("insert into ")
+								.append(SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD)
+								.append(" (instance_id,type,value,field_name) values (")
+								.append(map.key).append(",")
+								.append(map.type).append(",").append(map.value)
+								.append(",").append("?").append(");").toString());
+				statement.setString(1, map.fieldname);
+				statement.executeUpdate();
+				statement.close();
+				instanceMap.put(map.value, map.key, map.fieldname);
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+//			statement.setInt(1, value);
+//			statement.setString(2, fieldName);
+
+//			int instanceLength = 0;
+//			int key = (int) iterator.next();
+//			if (key == 1134802728) {
+//				System.out.print(1134802728);
+//			}
+//			Instance instance = oomMap.get(key);
+//			if (instance == null) {
+//				continue;
+//			}
+//			try {
+//				instanceToClass.put(instance.getObjectId(),
+//						instance.getClassId());
+//				List<InstanceField> list1 = classFiled.get(instance
+//						.getClassId());
+//				Iterator<InstanceField> iterator2 = list1.iterator();
+//				ArrayList types = new ArrayList();
+//				ArrayList sizes = new ArrayList();
+//				ArrayList fieldNames = new ArrayList();
+//				while (iterator2.hasNext()) {
+//					InstanceField field = iterator2.next();
+//					BasicType type = field.getType();
+//					types.add(type.type);
+//					sizes.add(type.size);
+//					int id = field.getFieldNameId();
+//					PreparedStatement stringStatement;
+//					stringStatement = conn.prepareStatement(new StringBuilder(
+//							"select * from ").append(SQLDOMAIN.TABLE_STRING)
+//							.append(" where id=").append(id).append(";")
+//							.toString());
+//					ResultSet stringSet = stringStatement.executeQuery();
+//					if (stringSet.next()) {
+//						fieldNames.add(stringSet.getString("value"));
+//					}
+//					stringStatement.close();
+//					stringSet.close();
+//				}
+//				Iterator typeIterator = types.iterator();
+//				Iterator iterator1 = sizes.iterator();
+//				Iterator nameIterator = fieldNames.iterator();
+//				byte[] bytes = instance.getInstanceFieldData();
+//				int i = 0;
+//				while (i < bytes.length && typeIterator.hasNext()) {
+//					int typeItem = (Integer) typeIterator.next();
+//					int size = (Integer) iterator1.next();
+//					String fieldName = (String) nameIterator.next();
+//					if (typeItem == 2) {
+//						int value = Utils.byteArrayToInt(bytes, i);
+//						if (value != 0 && !gcRoot.contains(value)) {
+//							// InstanceTraceItem temp =
+//							// instanceIndexMap.get(key);
+//							// if (!temp.contains(value)) {
+//							// InstanceTraceItem item = null;
+//							// if (!instanceIndexMap.containsKey(value)) {
+//							// item = new InstanceTraceItem();
+//							// item.setId(value);
+//							// } else {
+//							// item = instanceIndexMap.get(value);
+//							// }
+//							// if (item != null
+//							// && !instanceIndexMap.get(key).contains(value)) {
+//							// item.addTrace(instanceIndexMap.get(key));
+//							// instanceIndexMap.put(value, item);
+//							// }
+//							// }
+//							PreparedStatement statement = conn
+//									.prepareStatement(new StringBuilder(
+//											"insert into ")
+//											.append(SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD)
+//											.append(" (instance_id,type,value,field_name) values (")
+//											.append(instance.getObjectId())
+//											.append(",").append(typeItem)
+//											.append(",").append("?")
+//											.append(",").append("?")
+//											.append(");").toString());
+//							statement.setInt(1, value);
+//							statement.setString(2, fieldName);
+//							statement.executeUpdate();
+//							statement.close();
+//							indexValueToId.put(value, instance.getObjectId(),
+//									fieldName);
+//							// }
+//						}
+//					} else {
+//						instanceLength += size;
+//					}
+//					i = i + size;
+//				}
+//				StringBuffer buffer = new StringBuffer().append("insert into ")
+//						.append(SQLDOMAIN.TABLE_INSTANCE).append(" values (")
+//						.append(instance.getObjectId()).append(",")
+//						.append(instance.getClassId()).append(",")
+//						.append(instance.getLength()).append(",")
+//						.append(instanceLength).append(");");
+//				PreparedStatement insertState = conn.prepareStatement(buffer
+//						.toString());
+//				insertState.executeUpdate();
+//				insertState.close();
+//			} catch (SQLException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
 		}
 	}
 
-	private void initInstanceDB(HashSet<Integer> list) {
-		Iterator iterator = list.iterator();
+	private InstanceTraceItem initInstanceTraceItemField(InstanceTraceItem item) {
+		int id = item.getId();
+		System.out.print(id);
+		if (gcRoot.contains(id)) {
+			return null;
+		}
+		HashSet<InstanceTraceItem> items = item.getTraceItems();
+		Iterator<InstanceTraceItem> iterator = items.iterator();
 		while (iterator.hasNext()) {
-			int instanceLength = 0;
-			int key = (int) iterator.next();
-			Instance instance = instances.get(key);
-			if (instance != null) {
-				try {
-
-					instanceToClass.put(instance.getObjectId(),
-							instance.getClassId());
-					List<InstanceField> list1 = classFiled.get(instance
-							.getClassId());
-					Iterator<InstanceField> iterator2 = list1.iterator();
-					ArrayList types = new ArrayList();
-					ArrayList sizes = new ArrayList();
-					ArrayList fieldNames = new ArrayList();
-					while (iterator2.hasNext()) {
-						InstanceField field = iterator2.next();
-						BasicType type = field.getType();
-						types.add(type.type);
-						sizes.add(type.size);
-						int id = field.getFieldNameId();
-						PreparedStatement stringStatement;
-						stringStatement = conn
-								.prepareStatement(new StringBuilder(
-										"select * from ")
-										.append(SQLDOMAIN.TABLE_STRING)
-										.append(" where id=").append(id)
-										.append(";").toString());
-						ResultSet stringSet = stringStatement.executeQuery();
-						if (stringSet.next()) {
-							fieldNames.add(stringSet.getString("value"));
-						}
-						stringStatement.close();
-						stringSet.close();
-					}
-					Iterator typeIterator = types.iterator();
-					Iterator iterator1 = sizes.iterator();
-					Iterator nameIterator = fieldNames.iterator();
-					byte[] bytes = instance.getInstanceFieldData();
-					int i = 0;
-					while (i < bytes.length && typeIterator.hasNext()) {
-						int typeItem = (Integer) typeIterator.next();
-						int size = (Integer) iterator1.next();
-						String fieldName = (String) nameIterator.next();
-						if (typeItem == 2) {
-							int value = Utils.byteArrayToInt(bytes, i);
-							if (value != 0 && list.contains(value)) {
-								PreparedStatement statement = conn
-										.prepareStatement(new StringBuilder(
-												"insert into ")
-												.append(SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD)
-												.append(" (instance_id,type,value,field_name) values (")
-												.append(instance.getObjectId())
-												.append(",").append(typeItem)
-												.append(",").append("?")
-												.append(",").append("?")
-												.append(");").toString());
-								statement.setInt(1, value);
-								statement.setString(2, fieldName);
-								statement.executeUpdate();
-								statement.close();
-								indexValueToId.put(value,
-										instance.getObjectId(), fieldName);
-								// }
-							}
-						} else {
-							instanceLength += size;
-						}
-						i = i + size;
-					}
-					StringBuffer buffer = new StringBuffer()
-							.append("insert into ")
-							.append(SQLDOMAIN.TABLE_INSTANCE)
-							.append(" values (").append(instance.getObjectId())
-							.append(",").append(instance.getClassId())
-							.append(",").append(instance.getLength())
-							.append(",").append(instanceLength).append(");");
-					PreparedStatement insertState = conn
-							.prepareStatement(buffer.toString());
-					insertState.executeUpdate();
-					insertState.close();
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
+			InstanceTraceItem temp = iterator.next();
+			int key = temp.getId();
+			String name = instanceMap.get(id).get(key);
+			temp.setFieldName(name);
+			try {
+				initInstanceTraceItemField(temp);
+			} catch (Exception e) {
+				// TODO: handle exception
+				e.printStackTrace();
+				System.exit(0);
 			}
 
 		}
+		return item;
 	}
+
+	// public InstanceTraceItem getInstanceTraceItem(int id) {
+	// return initInstanceTraceItemField(instanceIndexMap.get(id));
+	// }
+
+	// public
 
 	private void analyzerInstance() {
 

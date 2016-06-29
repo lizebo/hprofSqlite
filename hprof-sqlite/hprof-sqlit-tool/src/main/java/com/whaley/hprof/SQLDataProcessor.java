@@ -148,11 +148,11 @@ public class SQLDataProcessor extends DiscardProcessor {
 		}
 		case Tag.STACK_FRAME:
 			StackFrame stackFrame = reader.readStackFrameRecord();
-			// System.out.print(stackFrame.getId() + "STACK_FRAME"+"\n");
+			 System.out.print(stackFrame.getId() + "STACK_FRAME"+"\n");
 			break;
 		case Tag.STACK_TRACE:
 			StackTrace stackTrace = reader.readStackTraceRecord();
-			// System.out.print(stackTrace.getFrameIds() + "STACK_TRACE"+"\n");
+			 System.out.print(stackTrace.getFrameIds() + "STACK_TRACE"+"\n");
 			break;
 		case Tag.ALLOC_SITES:
 			System.out.print("ALLOC_SITES:" + "\n");
@@ -164,7 +164,7 @@ public class SQLDataProcessor extends DiscardProcessor {
 			break;
 		case Tag.START_THREAD:
 			ThreadField threadField = reader.readThreadRecord();
-			// System.out.print(threadField.getId()+"START_THREAD");
+			 System.out.print(threadField.getId()+"START_THREAD");
 			break;
 		default:
 			super.onRecord(tag, timestamp, length, reader);

@@ -2,6 +2,7 @@ package com.whaley.hprof.sqlitemanager;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.Iterator;
 
 import javax.swing.tree.TreeNode;
@@ -14,7 +15,7 @@ public class InstanceTraceItem implements TreeNode{
     private String name;
     private int length;
     private String fieldName;
-    private ArrayList<InstanceTraceItem> traceItems;
+    private HashSet<InstanceTraceItem> traceItems;
 
     public String getFieldName() {
 		return fieldName;
@@ -33,7 +34,7 @@ public class InstanceTraceItem implements TreeNode{
 	}
 
 	public InstanceTraceItem() {
-        traceItems = new ArrayList<InstanceTraceItem>();
+        traceItems = new HashSet();
     }
 
     public int getId() {
@@ -44,11 +45,11 @@ public class InstanceTraceItem implements TreeNode{
         this.id = id;
     }
 
-    public ArrayList<InstanceTraceItem> getTraceItems() {
+    public HashSet<InstanceTraceItem> getTraceItems() {
         return traceItems;
     }
 
-    public void setTraceItems(ArrayList<InstanceTraceItem> traceItems) {
+    public void setTraceItems(HashSet<InstanceTraceItem> traceItems) {
         this.traceItems = traceItems;
     }
     public void addTrace(InstanceTraceItem item){
@@ -87,7 +88,9 @@ public class InstanceTraceItem implements TreeNode{
 	@Override
 	public TreeNode getChildAt(int childIndex) {
 		// TODO Auto-generated method stub
-		return traceItems.get(childIndex);
+		ArrayList items = new ArrayList();
+		items.addAll(traceItems);
+		return (InstanceTraceItem)items.get(childIndex);
 	}
 
 	@Override
@@ -99,7 +102,9 @@ public class InstanceTraceItem implements TreeNode{
 	@Override
 	public int getIndex(TreeNode node) {
 		// TODO Auto-generated method stub
-		return traceItems.indexOf(node);
+		ArrayList items = new ArrayList();
+		items.addAll(traceItems);
+		return items.indexOf(node);
 	}
 
 	@Override
@@ -125,5 +130,16 @@ public class InstanceTraceItem implements TreeNode{
 		}
 
 		return name;
+	}
+	
+	public boolean contains(int id){
+		Iterator<InstanceTraceItem> iterator = traceItems.iterator();
+		while (iterator.hasNext()) {
+			InstanceTraceItem item = iterator.next();
+			if (item.getId()==id) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
