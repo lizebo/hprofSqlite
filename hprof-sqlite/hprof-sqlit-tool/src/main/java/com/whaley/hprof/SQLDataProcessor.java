@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/**
+/**继承自lib中的文件分析类
  * Created by hc on 2016/5/23.
  */
 public class SQLDataProcessor extends DiscardProcessor {

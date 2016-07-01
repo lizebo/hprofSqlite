@@ -6,8 +6,8 @@ public class IndexMap{
 	public final static int TYPE_INSTANCE = 1;
 	public final static int TYPE_CLASS = 2;
 	public final static int TYPE_ARR = 3;
-	public int key;
-	public int value;
+	public Integer key;
+	public Integer value;
 	public String fieldname;
 	public int type;
 
@@ -26,8 +26,17 @@ public class IndexMap{
 	@Override
 	public boolean equals(Object obj) {
 		// TODO Auto-generated method stub
-		IndexMap temp = (IndexMap) obj;
-		return key==temp.key&&value==temp.value;
+		if (obj instanceof IndexMap) {
+			IndexMap temp = (IndexMap) obj;
+			return this.key==temp.key&&this.value==temp.value;
+		}
+		return super.equals(obj);
+	}
+
+	@Override
+	public int hashCode() {
+		// TODO Auto-generated method stub
+		return key.hashCode()+value.hashCode();
 	}
 
 }

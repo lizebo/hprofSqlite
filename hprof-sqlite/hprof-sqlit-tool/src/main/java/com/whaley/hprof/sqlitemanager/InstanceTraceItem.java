@@ -3,7 +3,10 @@ package com.whaley.hprof.sqlitemanager;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.swing.tree.TreeNode;
 
@@ -13,9 +16,10 @@ import javax.swing.tree.TreeNode;
 public class InstanceTraceItem implements TreeNode{
     private int id;
     private String name;
-    private int length;
+    private int length=0;
     private String fieldName;
     private HashSet<InstanceTraceItem> traceItems;
+    private Hashtable<Integer, GCRootPath> rootPath;
 
     public String getFieldName() {
 		return fieldName;
@@ -34,7 +38,8 @@ public class InstanceTraceItem implements TreeNode{
 	}
 
 	public InstanceTraceItem() {
-        traceItems = new HashSet();
+        traceItems = new HashSet<InstanceTraceItem>();
+        rootPath = new Hashtable<Integer, GCRootPath>();
     }
 
     public int getId() {
@@ -49,11 +54,22 @@ public class InstanceTraceItem implements TreeNode{
         return traceItems;
     }
 
-    public void setTraceItems(HashSet<InstanceTraceItem> traceItems) {
+    public void setTraceItems(HashSet traceItems) {
         this.traceItems = traceItems;
     }
-    public void addTrace(InstanceTraceItem item){
-        traceItems.add(item);
+    public void addTrace(InstanceTraceItem item,int rootId,int path){
+		if (id==item.getId()) {
+			return;
+		}
+    	GCRootPath temp = rootPath.get(rootId);   	
+    	if (temp!=null&&temp.path>path) {
+//			traceItems.remove(temp.item);
+	        traceItems.add(item);
+	        rootPath.replace(rootId,new GCRootPath(path,item));
+		}else if (temp==null) {
+			traceItems.add(item);
+			rootPath.put(rootId,new GCRootPath(path,item));
+		}
     }
 
     public String getName() {
@@ -64,14 +80,14 @@ public class InstanceTraceItem implements TreeNode{
         this.name = name;
     }
 
-    public void print(){
-        System.out.println(name+"\n");
-        Iterator<InstanceTraceItem> iterator = traceItems.iterator();
-        while (iterator.hasNext()){
-            InstanceTraceItem traceItem = iterator.next();
-            traceItem.print();
-        }
-    }
+//    public void print(){
+//        System.out.println(name+"\n");
+//        Iterator iterator = traceItems.iterator();
+//        while (iterator.hasNext()){
+//            InstanceTraceItem traceItem = iterator.next();
+//            traceItem.print();
+//        }
+//    }
 
 	@Override
 	public Enumeration children() {
@@ -90,7 +106,7 @@ public class InstanceTraceItem implements TreeNode{
 		// TODO Auto-generated method stub
 		ArrayList items = new ArrayList();
 		items.addAll(traceItems);
-		return (InstanceTraceItem)items.get(childIndex);
+		return (TreeNode) items.get(childIndex);
 	}
 
 	@Override
@@ -103,8 +119,8 @@ public class InstanceTraceItem implements TreeNode{
 	public int getIndex(TreeNode node) {
 		// TODO Auto-generated method stub
 		ArrayList items = new ArrayList();
-		items.addAll(traceItems);
-		return items.indexOf(node);
+//		items.addAll(traceItems);
+		return 0;
 	}
 
 	@Override
@@ -122,24 +138,90 @@ public class InstanceTraceItem implements TreeNode{
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub
-		if (length>0) {
+//		if (length>0) {
 			if (fieldName!=null) {
 				return name+"["+fieldName+"]"+" size:"+length+"byte"+" id:"+id;
 			}
-			return name+" size:"+length+"byte";
-		}
+			return name+" size:"+length+"byte"+" id:"+id;
+//		}
 
-		return name;
+//		return name;
 	}
 	
-	public boolean contains(int id){
-		Iterator<InstanceTraceItem> iterator = traceItems.iterator();
-		while (iterator.hasNext()) {
-			InstanceTraceItem item = iterator.next();
-			if (item.getId()==id) {
-				return true;
-			}
+	
+	class GCRootPath{
+		int path;
+		InstanceTraceItem item;
+		public GCRootPath(int path, InstanceTraceItem item) {
+			super();
+			this.path = path;
+			this.item = item;
 		}
-		return false;
+		
 	}
+
+	public void addTrace(InstanceTraceItem item) {
+		// TODO Auto-generated method stub
+//		if (id==item.getId()) {
+//			return;
+//		}
+//		Hashtable<Integer, GCRootPath> temp = item.getRootPath();
+//		Iterator iterator = temp.entrySet().iterator();
+//		while (iterator.hasNext()) {
+//			Map.Entry entry = (Entry) iterator.next();
+//			int id = (int) entry.getKey();
+//			GCRootPath gctemp = (GCRootPath) entry.getValue();
+//			addTrace(gctemp.item, id, gctemp.path);
+//		}
+		traceItems.add(item);
+	}
+	public void addTrace(InstanceTraceItem item,int rootId) {
+		// TODO Auto-generated method stub
+		if (id==item.getId()) {
+			return;
+		}
+		int path = item.getPathLen(rootId)+1; 
+		GCRootPath temp = rootPath.get(rootId);
+//		traceItems.remove(temp.item);
+		rootPath.replace(rootId, new GCRootPath(path, item));
+		traceItems.add(item);
+		
+//		Hashtable<Integer, GCRootPath> temp = item.getRootPath();
+//		Iterator iterator = temp.entrySet().iterator();
+//		while (iterator.hasNext()) {
+//			Map.Entry entry = (Entry) iterator.next();
+//			int id = (int) entry.getKey();
+//			GCRootPath gctemp = (GCRootPath) entry.getValue();
+//			addTrace(gctemp.item, id, gctemp.path);
+//		}
+	}
+	
+	public Hashtable<Integer, GCRootPath> getRootPath(){
+		return rootPath;
+	}
+	
+	public int getPathLen(int rootId){
+		GCRootPath temp = rootPath.get(rootId);
+		if (temp!=null) {
+			return temp.path;
+		}
+		return -1;
+	}
+
+	@Override
+	public boolean equals(Object arg0) {
+		// TODO Auto-generated method stub
+		if (arg0 instanceof InstanceTraceItem) {
+			return id==((InstanceTraceItem)arg0).getId();
+		}
+		return super.equals(arg0);
+	}
+
+	@Override
+	public int hashCode() {
+		// TODO Auto-generated method stub
+		return id;
+	}
+	
+	
 }

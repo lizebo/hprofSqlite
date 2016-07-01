@@ -289,12 +289,16 @@ public class SearchFrame extends JFrame {
 														.findLengthById(
 																id,
 																new ArrayList<Integer>());
+//												InstanceTraceItem item = SqliteManager
+//														.getInstance()
+//														.getInstanceTraceItem(
+//																id,
+//																new ArrayList<Integer>(),
+//																length);
 												InstanceTraceItem item = SqliteManager
 														.getInstance()
 														.getInstanceTraceItem(
-																id,
-																new ArrayList<Integer>(),
-																length);
+																id);
 												// InstanceTraceItem item = data
 												// .get(id);
 												if (item != null) {
