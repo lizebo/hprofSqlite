@@ -124,8 +124,8 @@ public class CreateHprofFrame extends JFrame {
 					String hprofPath = newFile.getAbsolutePath();
 					if (ip != null && packageName != null && hprofPath != null) {
 						try {
-							CmdProceManager.createHprof(ip, packageName,hprofPath);
-//							SHProceManager.createHprof(ip, packageName, hprofPath);
+//							CmdProceManager.createHprof(ip, packageName,hprofPath);
+							SHProceManager.createHprof(ip, packageName, hprofPath);
 							File file = new File(hprofPath);
 							if (!file.exists()
 									|| (file.exists() && file.length() == 0)) {

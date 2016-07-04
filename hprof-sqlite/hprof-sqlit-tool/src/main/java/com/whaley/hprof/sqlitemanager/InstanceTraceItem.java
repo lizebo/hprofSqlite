@@ -166,17 +166,6 @@ public class InstanceTraceItem implements TreeNode{
 
 	public void addTrace(InstanceTraceItem item) {
 		// TODO Auto-generated method stub
-//		if (id==item.getId()) {
-//			return;
-//		}
-//		Hashtable<Integer, GCRootPath> temp = item.getRootPath();
-//		Iterator iterator = temp.entrySet().iterator();
-//		while (iterator.hasNext()) {
-//			Map.Entry entry = (Entry) iterator.next();
-//			int id = (int) entry.getKey();
-//			GCRootPath gctemp = (GCRootPath) entry.getValue();
-//			addTrace(gctemp.item, id, gctemp.path);
-//		}
 		traceItems.add(item);
 	}
 	public void addTrace(InstanceTraceItem item,int rootId) {
@@ -190,14 +179,6 @@ public class InstanceTraceItem implements TreeNode{
 		rootPath.replace(rootId, new GCRootPath(path, item));
 		traceItems.add(item);
 		
-//		Hashtable<Integer, GCRootPath> temp = item.getRootPath();
-//		Iterator iterator = temp.entrySet().iterator();
-//		while (iterator.hasNext()) {
-//			Map.Entry entry = (Entry) iterator.next();
-//			int id = (int) entry.getKey();
-//			GCRootPath gctemp = (GCRootPath) entry.getValue();
-//			addTrace(gctemp.item, id, gctemp.path);
-//		}
 	}
 	
 	public Hashtable<Integer, GCRootPath> getRootPath(){

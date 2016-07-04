@@ -194,9 +194,7 @@ public class SearchFrame extends JFrame {
 										.findLengthById(id,
 												new ArrayList<Integer>());
 								InstanceTraceItem item = SqliteManager
-										.getInstance().getInstanceTraceItem(id,
-												new ArrayList<Integer>(),
-												length);
+										.getInstance().getInstanceTraceItem(id);
 								JTree tree = new JTree(item);
 								scrollPane_1.setViewportView(tree);
 								scrollPane_1.invalidate();

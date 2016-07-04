@@ -153,6 +153,9 @@ public class SqliteManager {
 		try {
 			Class.forName("org.sqlite.JDBC");
 			String conName = "jdbc:sqlite:" + dbName;
+			if (conn!=null&&!conn.isClosed()) {
+				conn.close();
+			}
 			conn = DriverManager.getConnection(conName);
 			conn.setAutoCommit(false);
 			PreparedStatement indexStatement = conn
@@ -242,6 +245,9 @@ public class SqliteManager {
 			Class.forName("org.sqlite.JDBC");
 			// 建立一个数据库名zieckey.db的连接，如果不存在就在当前目录下创建之
 			String conName = "jdbc:sqlite:" + dbName + ".db";
+			if (conn!=null&&!conn.isClosed()) {
+				conn.close();
+			}
 			conn = DriverManager.getConnection(conName);
 			conn.setAutoCommit(false);
 			PreparedStatement delStringTable = conn
@@ -382,8 +388,7 @@ public class SqliteManager {
 				int id = resultSet.getInt("id");
 				// traceIds.clear();
 				int length = findLengthById(id, new ArrayList<Integer>());
-				InstanceTraceItem item = getInstanceTraceItem(id,
-						new ArrayList<Integer>(), length);
+				InstanceTraceItem item = getInstanceTraceItem(id);
 				if (item != null) {
 					items.add(item);
 				}
@@ -595,135 +600,6 @@ public class SqliteManager {
 		return temp;
 	}
 
-	/**
-	 * 根据id查gc引用链
-	 * 
-	 * @param id
-	 * @param traceIds
-	 * @param originLength
-	 * @return
-	 */
-	public InstanceTraceItem getInstanceTraceItem(int id,
-			ArrayList<Integer> traceIds, int originLength) {
-		if (initedTraceItems.containsKey(id)) {
-			return initedTraceItems.get(id);
-		}
-		InstanceTraceItem traceItem = new InstanceTraceItem();
-		traceItem.setId(id);
-		int length = findLengthById(id, new ArrayList<Integer>(), originLength);
-		traceItem.setLength(length);
-		if (finalizersInstances.containsKey(id)) {
-			traceIds.remove((Integer) id);
-			return null;
-		}
-		/**
-		 * 查看id是否在gcroot中，递归出口
-		 */
-
-		if (gcRoot.containsKey(id)) {
-			String name = getClassNameForInstance(id) + " root:"
-					+ gcRoot.get(id);
-			if (name != null) {
-				traceItem.setName(name);
-			}
-			initedTraceItems.put(id, traceItem);
-			traceIds.remove((Integer) id);
-			return traceItem;
-		}
-		traceIds.add(id);
-		/**
-		 * 查询当前id是否是类的staitc变量
-		 */
-		if (classMap.containsKey(id)) {
-			HashMap<Integer, String> temp = classMap.get(id);
-			Iterator<Integer> iterator = temp.keySet().iterator();
-			while (iterator.hasNext()) {
-				InstanceTraceItem item = new InstanceTraceItem();
-				Integer key = iterator.next();
-				item.setId(key);
-				if (gcRoot.containsKey(key)) {
-					String name = getClassNameForClass(key) + " root:"
-							+ gcRoot.get(key);
-					item.setName(name);
-					item.setFieldName(temp.get(key));
-					traceItem.addTrace(item);
-					traceItem.setName(getClassNameForInstance(id));
-				}
-
-			}
-			traceIds.remove((Integer) id);
-		}
-		/**
-		 * 查询当前id被哪些实例引用
-		 */
-		if (instanceMap.size() > 0) {
-			HashMap<Integer, String> item = instanceMap.get(id);
-			if (item != null && item.size() > 0) {
-				Iterator iterator = item.entrySet().iterator();
-				while (iterator.hasNext()) {
-					Map.Entry entry = (Map.Entry) iterator.next();
-					int temp_id = (int) entry.getKey();
-					String name = getClassNameForInstance(id);
-					if (name == null) {
-					} else {
-						if (!traceIds.contains(temp_id)) {
-							traceItem.setName(name);
-							InstanceTraceItem temp = getInstanceTraceItem(
-									temp_id, traceIds, length);
-							if (temp != null) {
-								traceItem.addTrace(temp);
-								temp.setFieldName((String) entry.getValue());
-							}
-						}
-					}
-				}
-			}
-		}
-		/**
-		 * 查询当前id是否在数组中
-		 */
-		if (arrMap.containsKey(id)) {
-			HashMap<Integer, String> temp = arrMap.get(id);
-			if (temp != null && temp.size() > 0) {
-				Iterator<Integer> iterator = temp.keySet().iterator();
-				if (traceItem.getName() == null) {
-					String name = getClassNameForInstance(id);
-					if (name != null) {
-						traceItem.setName(name);
-					}
-				}
-				while (iterator.hasNext()) {
-					int key = iterator.next();
-					if (!traceIds.contains(key)) {
-						traceIds.add(key);
-						InstanceTraceItem item = getInstanceTraceItem(key,
-								traceIds, length);
-						if (item != null) {
-							item.setFieldName(temp.get(key));
-							traceItem.addTrace(item);
-						}
-
-					}
-
-				}
-			}
-		}
-
-		if (traceItem.getTraceItems().size() == 0
-				&& !gcRoot.containsKey(traceItem.getId())) {
-			initedTraceItems.put(traceItem.getId(), null);
-			traceIds.remove((Integer) id);
-			return null;
-		}
-		if (traceItem.getName() != null) {
-			traceIds.remove((Integer) id);
-			initedTraceItems.put(traceItem.getId(), traceItem);
-			return traceItem;
-		}
-		traceIds.remove((Integer) id);
-		initedTraceItems.put(traceItem.getId(), null);
-		return null;
-	}
 
 	/**
 	 * @param classId
@@ -1398,50 +1274,6 @@ public class SqliteManager {
 		initInstanceDB(instanceRefMap);
 	}
 
-	/**
-	 * 从gcroot开始查询整个引用链
-	 * 
-	 * @param origin
-	 * @param all
-	 * @return 从gcroot可达的所有instanceId
-	 */
-	private HashMap<Integer, Instance> initGCLinkInstance(
-			HashMap<Integer, Instance> origin, HashMap<Integer, Instance> all) {
-		HashMap<Integer, Instance> result = new HashMap<Integer, Instance>();
-		Iterator iterator = origin.keySet().iterator();
-		while (iterator.hasNext()) {
-			int key = (int) iterator.next();
-			Instance instance = origin.get(key);
-			List<InstanceField> instanceFields = classFiled.get(instance
-					.getClassId());
-			Iterator<InstanceField> fieldIterator = instanceFields.iterator();
-			ArrayList types = new ArrayList();
-			ArrayList sizes = new ArrayList();
-			while (fieldIterator.hasNext()) {
-				InstanceField field = fieldIterator.next();
-				BasicType type = field.getType();
-				types.add(type.type);
-				sizes.add(type.size);
-			}
-			Iterator typeIterator = types.iterator();
-			Iterator iterator1 = sizes.iterator();
-			byte[] bytes = instance.getInstanceFieldData();
-			int i = 0;
-			while (i < bytes.length && typeIterator.hasNext()) {
-				int typeItem = (Integer) typeIterator.next();
-				int size = (Integer) iterator1.next();
-				if (typeItem == 2) {
-					int value = Utils.byteArrayToInt(bytes, i);
-					if (value != 0 && !result.containsKey(value)
-							&& all.containsKey(value)) {
-						result.put(value, all.get(value));
-					}
-				}
-				i = i + size;
-			}
-		}
-		return result;
-	}
 
 	private HashMap<Integer, Instance> initGCLinkInstance(
 			Hashtable<Integer, String> origin, HashMap<Integer, Instance> all) {
@@ -1648,45 +1480,6 @@ public class SqliteManager {
 		}
 	}
 
-	private void initInstanceDB(HashMap<Integer, Instance> oomMap) {
-		// Iterator iterator = oomMap.keySet().iterator();
-		Iterator<IndexMap> iterator = instanceRefMap.iterator();
-		while (iterator.hasNext()) {
-			IndexMap map = iterator.next();
-			PreparedStatement statement;
-			try {
-				int type = map.type;
-				switch (type) {
-				case IndexMap.TYPE_INSTANCE:
-
-					break;
-
-				case IndexMap.TYPE_ARR:
-					break;
-				case IndexMap.TYPE_CLASS:
-					break;
-
-				default:
-					break;
-				}
-				statement = conn
-						.prepareStatement(new StringBuilder("insert into ")
-								.append(SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD)
-								.append(" (instance_id,type,value,field_name) values (")
-								.append(map.key).append(",").append(map.type)
-								.append(",").append(map.value).append(",")
-								.append("?").append(");").toString());
-				statement.setString(1, map.fieldname);
-				statement.executeUpdate();
-				statement.close();
-				// instanceMap.put(map.value, map.key, map.fieldname);
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
-
 	private synchronized void initIndex(int id, InstanceTraceItem item,
 			Hashtable<Integer, Integer> traceIds, int rootId, int path) {
 		if (mapInstance.containsKey(id)) {
@@ -1736,7 +1529,6 @@ public class SqliteManager {
 				int temp_id = (int) entry.getKey();
 				if (!gcRoot.contains(temp_id) && instances.containsKey(temp_id)) {
 					int tempPath = path + 1;
-					System.out.print(temp_id+"\n");
 					if (!initedTraceItems.containsKey(temp_id)) {
 						traceIds.put(temp_id, temp_id);
 						String value = (String) entry.getValue();
