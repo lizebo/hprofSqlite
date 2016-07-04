@@ -1,12 +1,14 @@
 package com.whaley.hprof.sqlitemanager;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.swing.tree.TreeNode;
 
@@ -18,7 +20,7 @@ public class InstanceTraceItem implements TreeNode{
     private String name;
     private int length=0;
     private String fieldName;
-    private HashSet<InstanceTraceItem> traceItems;
+    private Set<InstanceTraceItem> traceItems;
     private Hashtable<Integer, GCRootPath> rootPath;
 
     public String getFieldName() {
@@ -37,8 +39,10 @@ public class InstanceTraceItem implements TreeNode{
 		this.length = length;
 	}
 
+	@SuppressWarnings("unchecked")
 	public InstanceTraceItem() {
-        traceItems = new HashSet<InstanceTraceItem>();
+//        traceItems = new HashSet<InstanceTraceItem>();
+        traceItems = Collections.synchronizedSet(new HashSet());
         rootPath = new Hashtable<Integer, GCRootPath>();
     }
 
@@ -50,7 +54,7 @@ public class InstanceTraceItem implements TreeNode{
         this.id = id;
     }
 
-    public HashSet<InstanceTraceItem> getTraceItems() {
+    public Set<InstanceTraceItem> getTraceItems() {
         return traceItems;
     }
 

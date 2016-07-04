@@ -17,6 +17,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import jdk.internal.org.objectweb.asm.tree.analysis.Value;
 
@@ -496,10 +499,9 @@ public class SqliteManager {
 			queue.offer(id);
 			while (queue.size() != 0) {
 				int temp_id = queue.poll();
-				System.out.print("queue:" + temp_id + "\n");
 				InstanceTraceItem tempOrigin = initedTraceItems.get(temp_id);
 				InstanceTraceItem temp = tracedMap.get(temp_id);
-				HashSet<InstanceTraceItem> traceItems = tempOrigin
+				Set<InstanceTraceItem> traceItems = tempOrigin
 						.getTraceItems();
 				Iterator<InstanceTraceItem> iterator = traceItems.iterator();
 				while (iterator.hasNext()) {
@@ -513,16 +515,13 @@ public class SqliteManager {
 						HashMap<Integer, String> filednameMap3 = arrMap.get(temp_id);
 						if (filednameMap!=null&&filednameMap.get(tempOriginUnder.getId())!=null) {
 							String filedName = filednameMap.get(tempOriginUnder.getId());
-							System.out.print(filedName);
 							tempUnder.setFieldName(filedName);
 						}else if(filednameMap2!=null&&filednameMap2.get(tempOriginUnder.getId())!=null){
 							String filedName = filednameMap2.get(tempOriginUnder.getId());
 							tempUnder.setFieldName(filedName);
-							System.out.print(filedName);
 						}else if(filednameMap3!=null&&filednameMap3.get(tempOriginUnder.getId())!=null){
 							String filedName = filednameMap3.get(temp_id);
 							tempUnder.setFieldName(filedName);
-							System.out.print(filedName);
 						}
 						tempUnder.setName(tempOriginUnder.getName());
 						temp.addTrace(tempUnder);
@@ -538,7 +537,7 @@ public class SqliteManager {
 	
 	private InstanceTraceItem initTrace(InstanceTraceItem traceItem){
 		InstanceTraceItem temp = new InstanceTraceItem();
-		HashSet<InstanceTraceItem> traceItems = traceItem.getTraceItems();
+		Set<InstanceTraceItem> traceItems = traceItem.getTraceItems();
 		temp.setId(traceItem.getId());
 		temp.setName(traceItem.getName());
 		temp.setFieldName(traceItem.getFieldName());
@@ -1696,110 +1695,6 @@ public class SqliteManager {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			// statement.setInt(1, value);
-			// statement.setString(2, fieldName);
-
-			// int instanceLength = 0;
-			// int key = (int) iterator.next();
-			// if (key == 1134802728) {
-			// System.out.print(1134802728);
-			// }
-			// Instance instance = oomMap.get(key);
-			// if (instance == null) {
-			// continue;
-			// }
-			// try {
-			// instanceToClass.put(instance.getObjectId(),
-			// instance.getClassId());
-			// List<InstanceField> list1 = classFiled.get(instance
-			// .getClassId());
-			// Iterator<InstanceField> iterator2 = list1.iterator();
-			// ArrayList types = new ArrayList();
-			// ArrayList sizes = new ArrayList();
-			// ArrayList fieldNames = new ArrayList();
-			// while (iterator2.hasNext()) {
-			// InstanceField field = iterator2.next();
-			// BasicType type = field.getType();
-			// types.add(type.type);
-			// sizes.add(type.size);
-			// int id = field.getFieldNameId();
-			// PreparedStatement stringStatement;
-			// stringStatement = conn.prepareStatement(new StringBuilder(
-			// "select * from ").append(SQLDOMAIN.TABLE_STRING)
-			// .append(" where id=").append(id).append(";")
-			// .toString());
-			// ResultSet stringSet = stringStatement.executeQuery();
-			// if (stringSet.next()) {
-			// fieldNames.add(stringSet.getString("value"));
-			// }
-			// stringStatement.close();
-			// stringSet.close();
-			// }
-			// Iterator typeIterator = types.iterator();
-			// Iterator iterator1 = sizes.iterator();
-			// Iterator nameIterator = fieldNames.iterator();
-			// byte[] bytes = instance.getInstanceFieldData();
-			// int i = 0;
-			// while (i < bytes.length && typeIterator.hasNext()) {
-			// int typeItem = (Integer) typeIterator.next();
-			// int size = (Integer) iterator1.next();
-			// String fieldName = (String) nameIterator.next();
-			// if (typeItem == 2) {
-			// int value = Utils.byteArrayToInt(bytes, i);
-			// if (value != 0 && !gcRoot.contains(value)) {
-			// // InstanceTraceItem temp =
-			// // instanceIndexMap.get(key);
-			// // if (!temp.contains(value)) {
-			// // InstanceTraceItem item = null;
-			// // if (!instanceIndexMap.containsKey(value)) {
-			// // item = new InstanceTraceItem();
-			// // item.setId(value);
-			// // } else {
-			// // item = instanceIndexMap.get(value);
-			// // }
-			// // if (item != null
-			// // && !instanceIndexMap.get(key).contains(value)) {
-			// // item.addTrace(instanceIndexMap.get(key));
-			// // instanceIndexMap.put(value, item);
-			// // }
-			// // }
-			// PreparedStatement statement = conn
-			// .prepareStatement(new StringBuilder(
-			// "insert into ")
-			// .append(SQLDOMAIN.TABLE_INDEX_INSTANCE_FIELD)
-			// .append(" (instance_id,type,value,field_name) values (")
-			// .append(instance.getObjectId())
-			// .append(",").append(typeItem)
-			// .append(",").append("?")
-			// .append(",").append("?")
-			// .append(");").toString());
-			// statement.setInt(1, value);
-			// statement.setString(2, fieldName);
-			// statement.executeUpdate();
-			// statement.close();
-			// indexValueToId.put(value, instance.getObjectId(),
-			// fieldName);
-			// // }
-			// }
-			// } else {
-			// instanceLength += size;
-			// }
-			// i = i + size;
-			// }
-			// StringBuffer buffer = new StringBuffer().append("insert into ")
-			// .append(SQLDOMAIN.TABLE_INSTANCE).append(" values (")
-			// .append(instance.getObjectId()).append(",")
-			// .append(instance.getClassId()).append(",")
-			// .append(instance.getLength()).append(",")
-			// .append(instanceLength).append(");");
-			// PreparedStatement insertState = conn.prepareStatement(buffer
-			// .toString());
-			// insertState.executeUpdate();
-			// insertState.close();
-			// } catch (SQLException e) {
-			// // TODO Auto-generated catch block
-			// e.printStackTrace();
-			// }
 		}
 	}
 
@@ -1915,34 +1810,43 @@ public class SqliteManager {
 	}
 
 	private void initGCMap() {
+		ExecutorService fixedThreadPool = Executors.newFixedThreadPool(3);
 		Iterator iterator = gcRoot.entrySet().iterator();
 		while (iterator.hasNext()) {
 			Map.Entry entry = (Map.Entry) iterator.next();
-			int temp_id = (int) entry.getKey();
-			if (instances.containsKey(temp_id)) {
-				String value = (String) entry.getValue();
-				InstanceTraceItem temp = new InstanceTraceItem();
-				temp.setId(temp_id);
-				// temp.setFieldName(value);
-				temp.setName(getClassNameForInstance(temp_id) + " root:"
-						+ value);
-				initedTraceItems.put(temp_id, temp);
-				Hashtable<Integer, Integer> IdToPath = new Hashtable<Integer, Integer>();
-				IdToPath.put(temp_id, 0);
-				initIndex(temp_id, temp, IdToPath, temp_id, 0);
-			} else if (indexClassName.containsKey(temp_id)) {
-				String value = (String) entry.getValue();
-				InstanceTraceItem temp = new InstanceTraceItem();
-				temp.setId(temp_id);
-				temp.setName(indexClassName.get(temp_id) + " root:" + value);
-				initedTraceItems.put(temp_id, temp);
-				// HashMap<Integer, String> classInstance =
-				// mapClass.get(temp_id);
-				// Iterator iterator2 = classInstance.ge
-				Hashtable<Integer, Integer> IdToPath = new Hashtable<Integer, Integer>();
-				IdToPath.put(temp_id, 0);
-				initIndex(temp_id, temp, IdToPath, temp_id, 0);
-			}
+			fixedThreadPool.execute(new Runnable() {
+				
+				@Override
+				public void run() {
+					// TODO Auto-generated method stub					
+					int temp_id = (int) entry.getKey();
+					System.out.print(temp_id+"start:"+new java.util.Date().getTime()+"\n");
+					if (instances.containsKey(temp_id)) {
+						String value = (String) entry.getValue();
+						InstanceTraceItem temp = new InstanceTraceItem();
+						temp.setId(temp_id);
+						// temp.setFieldName(value);
+						temp.setName(getClassNameForInstance(temp_id) + " root:"
+								+ value);
+						initedTraceItems.put(temp_id, temp);
+						Hashtable<Integer, Integer> IdToPath = new Hashtable<Integer, Integer>();
+						IdToPath.put(temp_id, 0);
+						initIndex(temp_id, temp, IdToPath, temp_id, 0);
+					} else if (indexClassName.containsKey(temp_id)) {
+						String value = (String) entry.getValue();
+						InstanceTraceItem temp = new InstanceTraceItem();
+						temp.setId(temp_id);
+						temp.setName(indexClassName.get(temp_id) + " root:" + value);
+						initedTraceItems.put(temp_id, temp);
+						Hashtable<Integer, Integer> IdToPath = new Hashtable<Integer, Integer>();
+						IdToPath.put(temp_id, 0);
+						initIndex(temp_id, temp, IdToPath, temp_id, 0);
+					}
+					System.out.print(temp_id+"end:"+new java.util.Date().getTime()+"\n");
+//					fixedThreadPool.
+				}
+			});
+
 		}
 	}
 
