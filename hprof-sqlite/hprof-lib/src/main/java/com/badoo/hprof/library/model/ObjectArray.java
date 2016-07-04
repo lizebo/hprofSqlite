@@ -7,45 +7,55 @@ import javax.annotation.Nonnull;
  *
  * Created by Erik Andre on 23/04/15.
  */
-public class ObjectArray extends Record{
+public class ObjectArray extends Record {
 
-    private final int objectId;
-    private final int stackTraceSerial;
-    private final int elementClassId;
-    private final int count;
-//    private final int heapId;
-    private final int[] elements;
+	private final int objectId;
+	private final int stackTraceSerial;
+	private final int elementClassId;
+	private final int count;
+	// private final int heapId;
+	private final int[] elements;
 
-    public ObjectArray(int objectId, int stackTraceSerial, int elementClassId, int count, @Nonnull int[] elements) {
-        this.objectId = objectId;
-        this.stackTraceSerial = stackTraceSerial;
-        this.elementClassId = elementClassId;
-        this.count = count;
-        this.elements = elements;
-//        this.heapId = heapId;
-    }
+	public ObjectArray(int objectId,int elementClassId,int count) {
+		super();
+		this.objectId = objectId;
+		this.stackTraceSerial = -1;
+		this.elementClassId = elementClassId;
+		this.count = count;
+		this.elements = new int[1];
+	}
 
-//    public int getHeapId() {
-//        return heapId;
-//    }
+	public ObjectArray(int objectId, int stackTraceSerial, int elementClassId,
+			int count, @Nonnull int[] elements) {
+		this.objectId = objectId;
+		this.stackTraceSerial = stackTraceSerial;
+		this.elementClassId = elementClassId;
+		this.count = count;
+		this.elements = elements;
+		// this.heapId = heapId;
+	}
 
-    public int getObjectId() {
-        return objectId;
-    }
+	// public int getHeapId() {
+	// return heapId;
+	// }
 
-    public int getStackTraceSerial() {
-        return stackTraceSerial;
-    }
+	public int getObjectId() {
+		return objectId;
+	}
 
-    public int getElementClassId() {
-        return elementClassId;
-    }
+	public int getStackTraceSerial() {
+		return stackTraceSerial;
+	}
 
-    public int getCount() {
-        return count;
-    }
+	public int getElementClassId() {
+		return elementClassId;
+	}
 
-    public int[] getElements() {
-        return elements;
-    }
+	public int getCount() {
+		return count;
+	}
+
+	public int[] getElements() {
+		return elements;
+	}
 }
