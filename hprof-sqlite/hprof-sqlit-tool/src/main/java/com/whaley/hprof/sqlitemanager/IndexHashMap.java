@@ -3,13 +3,15 @@ package com.whaley.hprof.sqlitemanager;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("serial")
-public class IndexHashMap extends HashMap<Integer, HashMap<Integer,String>> {
+public class IndexHashMap extends ConcurrentHashMap<Integer, ConcurrentHashMap<Integer,String>> {
 	public void put(int key,int value,String name){
-		HashMap<Integer,String> temp;
+		ConcurrentHashMap<Integer,String> temp;
 		if (!containsKey(key)) {
-			temp = new HashMap();
+			temp = new ConcurrentHashMap();
 		}else {
 			temp = get(key);
 		}

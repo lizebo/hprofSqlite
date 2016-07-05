@@ -4,6 +4,7 @@ import com.badoo.hprof.library.Tag;
 import com.badoo.hprof.library.heap.HeapTag;
 import com.badoo.hprof.library.model.*;
 import com.google.common.collect.Multiset.Entry;
+import com.sun.org.apache.bcel.internal.generic.NEW;
 import com.sun.org.apache.regexp.internal.recompile;
 import com.sun.xml.internal.stream.Entity;
 
@@ -18,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -40,7 +43,7 @@ public class SqliteManager {
 	private IndexHashMap mapArr; // 数组引用映射表
 	private HashMap<Integer, String> indexClassName; // classId->classname
 	private Hashtable<Integer, ObjectArray> objArr; // objectArr表
-	private HashMap<Integer, InstanceTraceItem> initedTraceItems; // 记录已查找过的instance路径
+	private Hashtable<Integer, InstanceTraceItem> initedTraceItems; // 记录已查找过的instance路径
 
 	private HashMap<Integer, List<InstanceField>> classFiled; // class instance
 																// fields表
@@ -54,6 +57,8 @@ public class SqliteManager {
 												// 包括instanceId、classId
 	private Hashtable<Integer, ObjectArray> rootObjArr; // root引用的objarr
 	private IndexHashMap rootClassMap; // gc root class
+	
+	ExecutorService fixedThreadPool;
 
 	HashSet<IndexMap> instanceRefMap;
 	private ArrayList<Integer> systemClass;
@@ -85,8 +90,9 @@ public class SqliteManager {
 		objArr = new Hashtable<Integer, ObjectArray>();
 		rootObjArr = new Hashtable<Integer, ObjectArray>();
 		// instanceIndexMap = new Hashtable<Integer, InstanceTraceItem>();
-		initedTraceItems = new HashMap<Integer, InstanceTraceItem>();
+		initedTraceItems = new Hashtable<Integer, InstanceTraceItem>();
 		rootClassMap = new IndexHashMap();
+		fixedThreadPool = Executors.newFixedThreadPool(4);
 	}
 
 	private static synchronized void syncInit() {
@@ -153,7 +159,7 @@ public class SqliteManager {
 		try {
 			Class.forName("org.sqlite.JDBC");
 			String conName = "jdbc:sqlite:" + dbName;
-			if (conn!=null&&!conn.isClosed()) {
+			if (conn != null && !conn.isClosed()) {
 				conn.close();
 			}
 			conn = DriverManager.getConnection(conName);
@@ -168,7 +174,7 @@ public class SqliteManager {
 				int value = set.getInt("value");
 				int type = set.getInt("type");
 				String fieldName = set.getString("field_name");
-				instanceRefMap.add(new IndexMap(key,value,fieldName,type));
+				instanceRefMap.add(new IndexMap(key, value, fieldName, type));
 				// indexValueToId.put(key, value, fieldName);
 			}
 			PreparedStatement classStatement = conn
@@ -226,7 +232,7 @@ public class SqliteManager {
 			objarStatement.close();
 			initMaps(instanceRefMap);
 			initGCMap();
-//			PreparedStatement indexInstance
+			// PreparedStatement indexInstance
 		} catch (ClassNotFoundException | SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -245,7 +251,7 @@ public class SqliteManager {
 			Class.forName("org.sqlite.JDBC");
 			// 建立一个数据库名zieckey.db的连接，如果不存在就在当前目录下创建之
 			String conName = "jdbc:sqlite:" + dbName + ".db";
-			if (conn!=null&&!conn.isClosed()) {
+			if (conn != null && !conn.isClosed()) {
 				conn.close();
 			}
 			conn = DriverManager.getConnection(conName);
@@ -538,11 +544,11 @@ public class SqliteManager {
 						queue.offer(tempOriginUnder.getId());
 						InstanceTraceItem tempUnder = new InstanceTraceItem();
 						tempUnder.setId(tempOriginUnder.getId());
-						HashMap<Integer, String> filednameMap = instanceMap
+						ConcurrentHashMap<Integer, String> filednameMap = instanceMap
 								.get(temp_id);
-						HashMap<Integer, String> filednameMap2 = classMap
+						ConcurrentHashMap<Integer, String> filednameMap2 = classMap
 								.get(temp_id);
-						HashMap<Integer, String> filednameMap3 = arrMap
+						ConcurrentHashMap<Integer, String> filednameMap3 = arrMap
 								.get(temp_id);
 						if (filednameMap != null
 								&& filednameMap.get(tempOriginUnder.getId()) != null) {
@@ -599,7 +605,6 @@ public class SqliteManager {
 		}
 		return temp;
 	}
-
 
 	/**
 	 * @param classId
@@ -1274,7 +1279,6 @@ public class SqliteManager {
 		initInstanceDB(instanceRefMap);
 	}
 
-
 	private HashMap<Integer, Instance> initGCLinkInstance(
 			Hashtable<Integer, String> origin, HashMap<Integer, Instance> all) {
 		HashMap<Integer, Instance> result = new HashMap<Integer, Instance>();
@@ -1287,7 +1291,7 @@ public class SqliteManager {
 		while (iterator2.hasNext()) {
 			int classId = iterator2.next();
 			if (gcRoot.containsKey(classId)) {
-				HashMap<Integer, String> temp = rootClassMap.get(classId);
+				ConcurrentHashMap<Integer, String> temp = rootClassMap.get(classId);
 				Iterator iterator3 = temp.keySet().iterator();
 				while (iterator3.hasNext()) {
 					int instanceId = (int) iterator3.next();
@@ -1415,14 +1419,14 @@ public class SqliteManager {
 		Iterator<IndexMap> iterator = temp.iterator();
 		initMaps(temp);
 		initGCMap();
-//		new Thread(new Runnable() {
-//
-//			@Override
-//			public void run() {
-//				// TODO Auto-generated method stub
-//				initGCMap();
-//			}
-//		}).start();
+		// new Thread(new Runnable() {
+		//
+		// @Override
+		// public void run() {
+		// // TODO Auto-generated method stub
+		// initGCMap();
+		// }
+		// }).start();
 		while (iterator.hasNext()) {
 
 			IndexMap map = iterator.next();
@@ -1480,10 +1484,128 @@ public class SqliteManager {
 		}
 	}
 
+	private void initIndex(int rootId) {
+		Queue<Integer> queue = new ConcurrentLinkedQueue<Integer>();
+		InstanceTraceItem originItem = initedTraceItems.get(rootId);
+		HashMap<Integer, InstanceTraceItem> tracedMap = new HashMap<Integer, InstanceTraceItem>();
+		if (originItem == null) {
+			originItem = new InstanceTraceItem();
+			originItem.setId(rootId);
+			if (mapClass.containsKey(rootId)) {
+				originItem.setName(getClassNameForClass(rootId));
+			} else {
+				originItem.setName(getClassNameForInstance(rootId));
+			}
+			initedTraceItems.put(rootId, originItem);
+		}
+		tracedMap.put(rootId, originItem);
+		queue.offer(rootId);
+		while (queue.size() != 0) {
+			int id = queue.poll();
+			InstanceTraceItem item;
+			item = initedTraceItems.get(id);
+			if (mapInstance.containsKey(id)) {
+				ConcurrentHashMap<Integer, String> itemHashMap = mapInstance.get(id);
+				if (itemHashMap!=null) {
+					Iterator iter = itemHashMap.entrySet().iterator();
+					while (iter.hasNext()) {
+						Map.Entry entry = (Map.Entry) iter.next();
+						int temp_id = (int) entry.getKey();
+//						if (!tracedMap.containsKey(temp_id)) {
+							InstanceTraceItem temp;
+							if (!initedTraceItems.containsKey(temp_id)) {
+								queue.offer(temp_id);
+								temp = new InstanceTraceItem();
+								temp.setId(temp_id);
+								temp.setName(getClassNameForInstance(temp_id));
+								initedTraceItems.put(temp_id, temp);
+							} else {
+								temp = initedTraceItems.get(temp_id);
+							}
+							tracedMap.put(temp_id, temp);
+							temp.addTrace(item);
+						}
+						// if (!gcRoot.contains(temp_id)
+						// && (instances.containsKey(temp_id) || objArr
+						// .containsKey(temp_id))) {
+						// if (!initedTraceItems.containsKey(temp_id)) {
+						// tracedMap.put(temp_id, tempPath);
+						// String value = (String) entry.getValue();
+						// InstanceTraceItem temp = new InstanceTraceItem();
+						// temp.setId(temp_id);
+						// item.setFieldName(value);
+						// temp.setName(getClassNameForInstance(temp_id));
+						// temp.addTrace(item, rootId, temp_id);
+						// initedTraceItems.put(temp_id, temp);
+						// } else if (!tracedMap.containsKey(temp_id)) {
+						// int tempPath = path + 1;
+						// int pathLen = item.getPathLen(rootId);
+						// int len = traceIds.get(temp_id);
+						// if (pathLen != -1 && pathLen + 1 < len) {
+						// InstanceTraceItem temp = initedTraceItems
+						// .get(temp_id);
+						// temp.addTrace(item, rootId, tempPath);
+						// }
+						// }
+						// }
+//					}
+				}
+
+			} else if (mapClass.containsKey(id)) {
+				ConcurrentHashMap<Integer, String> itemHashMap = mapClass.get(id);
+				if (itemHashMap!=null) {
+					Iterator iter = itemHashMap.entrySet().iterator();
+					while (iter.hasNext()) {
+						Map.Entry entry = (Map.Entry) iter.next();
+						int temp_id = (int) entry.getKey();
+//						if (!tracedMap.containsKey(temp_id)) {							
+							InstanceTraceItem temp;
+							if (!initedTraceItems.containsKey(temp_id)) {
+								queue.offer(temp_id);
+								temp = new InstanceTraceItem();
+								temp.setId(temp_id);
+								temp.setName(getClassNameForInstance(temp_id));
+								initedTraceItems.put(temp_id, temp);
+							} else {
+								temp = initedTraceItems.get(temp_id);
+							}
+							tracedMap.put(temp_id, temp);
+							temp.addTrace(item);
+						}
+//					}
+				}
+			} else if (mapArr.containsKey(id)) {
+				ConcurrentHashMap<Integer, String> itemHashMap = mapArr.get(id);
+				if (itemHashMap!=null) {
+					Iterator iter = itemHashMap.entrySet().iterator();
+					while (iter.hasNext()) {
+						Map.Entry entry = (Map.Entry) iter.next();
+						int temp_id = (int) entry.getKey();
+//						if (!tracedMap.containsKey(temp_id)) {
+							InstanceTraceItem temp;
+							if (!initedTraceItems.containsKey(temp_id)) {
+								queue.offer(temp_id);
+								temp = new InstanceTraceItem();
+								temp.setId(temp_id);
+								temp.setName(getClassNameForInstance(temp_id));
+								initedTraceItems.put(temp_id, temp);
+							} else {
+								temp = initedTraceItems.get(temp_id);
+							}
+							tracedMap.put(temp_id, temp);
+							temp.addTrace(item);
+						}
+//					}
+				}
+			}
+
+		}
+	}
+
 	private synchronized void initIndex(int id, InstanceTraceItem item,
 			Hashtable<Integer, Integer> traceIds, int rootId, int path) {
 		if (mapInstance.containsKey(id)) {
-			HashMap<Integer, String> itemHashMap = mapInstance.get(id);
+			ConcurrentHashMap<Integer, String> itemHashMap = mapInstance.get(id);
 			Iterator iter = itemHashMap.entrySet().iterator();
 			while (iter.hasNext()) {
 				Map.Entry entry = (Map.Entry) iter.next();
@@ -1522,7 +1644,7 @@ public class SqliteManager {
 				}
 			}
 		} else if (mapClass.containsKey(id)) {
-			HashMap<Integer, String> itemHashMap = mapClass.get(id);
+			ConcurrentHashMap<Integer, String> itemHashMap = mapClass.get(id);
 			Iterator iter = itemHashMap.entrySet().iterator();
 			while (iter.hasNext()) {
 				Map.Entry entry = (Map.Entry) iter.next();
@@ -1552,7 +1674,7 @@ public class SqliteManager {
 				}
 			}
 		} else if (mapArr.containsKey(id)) {
-			HashMap<Integer, String> itemHashMap = mapArr.get(id);
+			ConcurrentHashMap<Integer, String> itemHashMap = mapArr.get(id);
 			Iterator iter = itemHashMap.entrySet().iterator();
 			while (iter.hasNext()) {
 				Map.Entry entry = (Map.Entry) iter.next();
@@ -1590,7 +1712,6 @@ public class SqliteManager {
 	}
 
 	private void initGCMap() {
-		ExecutorService fixedThreadPool = Executors.newFixedThreadPool(4);
 		Iterator iterator = gcRoot.entrySet().iterator();
 		while (iterator.hasNext()) {
 			Map.Entry entry = (Map.Entry) iterator.next();
@@ -1600,7 +1721,9 @@ public class SqliteManager {
 
 					@Override
 					public void run() {
-//						// TODO Auto-generated method stub
+						// // TODO Auto-generated method stub
+//						System.out.print("start:"+new java.util.Date().getTime()+"\n");
+						long start = new java.util.Date().getTime();
 						if (instances.containsKey(temp_id)) {
 							String value = (String) entry.getValue();
 							InstanceTraceItem temp = new InstanceTraceItem();
@@ -1609,19 +1732,19 @@ public class SqliteManager {
 							temp.setName(getClassNameForInstance(temp_id)
 									+ " root:" + value);
 							initedTraceItems.put(temp_id, temp);
-							Hashtable<Integer, Integer> IdToPath = new Hashtable<Integer, Integer>();
-							IdToPath.put(temp_id, 0);
-							initIndex(temp_id, temp, IdToPath, temp_id, 0);
-						} else if (indexClassName.containsKey(temp_id)) {							
+							initIndex(temp_id);
+						} else if (indexClassName.containsKey(temp_id)) {
 							String value = (String) entry.getValue();
 							InstanceTraceItem temp = new InstanceTraceItem();
 							temp.setId(temp_id);
 							temp.setName(indexClassName.get(temp_id) + " root:"
 									+ value);
 							initedTraceItems.put(temp_id, temp);
-							Hashtable<Integer, Integer> IdToPath = new Hashtable<Integer, Integer>();
-							IdToPath.put(temp_id, 0);
-							initIndex(temp_id, temp, IdToPath, temp_id, 0);
+							initIndex(temp_id);
+						}
+						long end = new java.util.Date().getTime();
+						if (end-start>0) {
+							System.out.print((end-start)+"\n");
 						}
 					}
 				});
