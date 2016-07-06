@@ -1525,6 +1525,30 @@ public class SqliteManager {
 							tracedMap.put(temp_id, temp);
 							temp.addTrace(item);
 						}
+						// if (!gcRoot.contains(temp_id)
+						// && (instances.containsKey(temp_id) || objArr
+						// .containsKey(temp_id))) {
+						// if (!initedTraceItems.containsKey(temp_id)) {
+						// tracedMap.put(temp_id, tempPath);
+						// String value = (String) entry.getValue();
+						// InstanceTraceItem temp = new InstanceTraceItem();
+						// temp.setId(temp_id);
+						// item.setFieldName(value);
+						// temp.setName(getClassNameForInstance(temp_id));
+						// temp.addTrace(item, rootId, temp_id);
+						// initedTraceItems.put(temp_id, temp);
+						// } else if (!tracedMap.containsKey(temp_id)) {
+						// int tempPath = path + 1;
+						// int pathLen = item.getPathLen(rootId);
+						// int len = traceIds.get(temp_id);
+						// if (pathLen != -1 && pathLen + 1 < len) {
+						// InstanceTraceItem temp = initedTraceItems
+						// .get(temp_id);
+						// temp.addTrace(item, rootId, tempPath);
+						// }
+						// }
+						// }
+//					}
 				}
 
 			} else if (mapClass.containsKey(id)) {
