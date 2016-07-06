@@ -1,4 +1,4 @@
-package com.whaley.hprof.sqlitemanager;
+package com.whaley.hprof.sqlitemanager.model;
 
 import jdk.internal.dynalink.beans.StaticClass;
 
@@ -6,6 +6,7 @@ public class IndexMap{
 	public final static int TYPE_INSTANCE = 1;
 	public final static int TYPE_CLASS = 2;
 	public final static int TYPE_ARR = 3;
+	public final static int TYPE_PRI = 4;
 	public Integer key;
 	public Integer value;
 	public String fieldname;

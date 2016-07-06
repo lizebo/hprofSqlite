@@ -7,8 +7,8 @@ import java.util.Iterator;
 import java.util.Scanner;
 
 import com.badoo.hprof.library.HprofReader;
-import com.whaley.hprof.sqlitemanager.InstanceTraceItem;
 import com.whaley.hprof.sqlitemanager.SqliteManager;
+import com.whaley.hprof.sqlitemanager.model.InstanceTraceItem;
 
 
 public class HprofSqlite {

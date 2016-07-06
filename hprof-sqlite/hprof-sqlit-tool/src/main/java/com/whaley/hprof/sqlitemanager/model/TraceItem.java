@@ -1,4 +1,4 @@
-package com.whaley.hprof.sqlitemanager;
+package com.whaley.hprof.sqlitemanager.model;
 
 /**
  * Created by hc on 2016/5/30.

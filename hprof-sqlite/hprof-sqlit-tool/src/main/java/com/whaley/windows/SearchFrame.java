@@ -1,4 +1,4 @@
-package windows;
+package com.whaley.windows;
 
 import java.awt.BorderLayout;
 import java.awt.EventQueue;
@@ -22,9 +22,9 @@ import javax.swing.JScrollPane;
 
 import com.sun.corba.se.impl.javax.rmi.CORBA.Util;
 import com.sun.media.sound.ModelAbstractChannelMixer;
-import com.whaley.hprof.sqlitemanager.InstanceTraceItem;
 import com.whaley.hprof.sqlitemanager.SqliteManager;
 import com.whaley.hprof.sqlitemanager.Utils;
+import com.whaley.hprof.sqlitemanager.model.InstanceTraceItem;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;

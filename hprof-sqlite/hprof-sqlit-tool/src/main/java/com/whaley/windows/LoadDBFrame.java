@@ -1,4 +1,4 @@
-package windows;
+package com.whaley.windows;
 
 import java.awt.EventQueue;
 

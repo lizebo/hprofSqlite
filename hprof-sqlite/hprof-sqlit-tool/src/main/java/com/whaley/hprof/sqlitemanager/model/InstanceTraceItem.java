@@ -1,4 +1,4 @@
-package com.whaley.hprof.sqlitemanager;
+package com.whaley.hprof.sqlitemanager.model;
 
 import java.util.ArrayList;
 import java.util.Collections;

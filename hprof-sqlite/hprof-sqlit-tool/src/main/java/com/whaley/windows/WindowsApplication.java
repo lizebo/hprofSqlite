@@ -1,4 +1,4 @@
-package windows;
+package com.whaley.windows;
 
 import java.awt.EventQueue;
 import java.awt.Frame;
@@ -95,25 +95,6 @@ public class WindowsApplication {
 		gridBagLayout.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
 		frame.getContentPane().setLayout(gridBagLayout);
 		
-		JButton btnNewButton = new JButton("\u8F7D\u5165\u6587\u4EF6");
-		btnNewButton.addActionListener(new ActionListener() {
-			
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				// TODO Auto-generated method stub
-//			    JFrame frame = new JFrame("title2");
-//			    fileFrame.setVisible(true);
-				loadFileFrame.setVisible(true);
-			}
-		});
-		GridBagConstraints gbc_btnNewButton = new GridBagConstraints();
-		gbc_btnNewButton.anchor = GridBagConstraints.NORTH;
-		gbc_btnNewButton.fill = GridBagConstraints.HORIZONTAL;
-		gbc_btnNewButton.insets = new Insets(0, 0, 5, 5);
-		gbc_btnNewButton.gridx = 1;
-		gbc_btnNewButton.gridy = 1;
-		frame.getContentPane().add(btnNewButton, gbc_btnNewButton);
-		
 		JButton button_1 = new JButton("\u6700\u5927\u5185\u5B58\u5360\u7528");
 		button_1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -134,6 +115,18 @@ public class WindowsApplication {
 			}
 		});
 		
+		JButton btnNewButton = new JButton("\u8F7D\u5165\u6587\u4EF6");
+		btnNewButton.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// TODO Auto-generated method stub
+//			    JFrame frame = new JFrame("title2");
+//			    fileFrame.setVisible(true);
+				loadFileFrame.setVisible(true);
+			}
+		});
+		
 		JButton btnNewButton_1 = new JButton("\u4E00\u952E\u751F\u6210hprof\u6587\u4EF6");
 		btnNewButton_1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -145,8 +138,15 @@ public class WindowsApplication {
 		gbc_btnNewButton_1.anchor = GridBagConstraints.NORTH;
 		gbc_btnNewButton_1.insets = new Insets(0, 0, 5, 5);
 		gbc_btnNewButton_1.gridx = 1;
-		gbc_btnNewButton_1.gridy = 2;
+		gbc_btnNewButton_1.gridy = 1;
 		frame.getContentPane().add(btnNewButton_1, gbc_btnNewButton_1);
+		GridBagConstraints gbc_btnNewButton = new GridBagConstraints();
+		gbc_btnNewButton.anchor = GridBagConstraints.NORTH;
+		gbc_btnNewButton.fill = GridBagConstraints.HORIZONTAL;
+		gbc_btnNewButton.insets = new Insets(0, 0, 5, 5);
+		gbc_btnNewButton.gridx = 1;
+		gbc_btnNewButton.gridy = 2;
+		frame.getContentPane().add(btnNewButton, gbc_btnNewButton);
 		
 		JButton button = new JButton("\u8F7D\u5165\u6570\u636E\u5E93\u6587\u4EF6");
 		GridBagConstraints gbc_button = new GridBagConstraints();

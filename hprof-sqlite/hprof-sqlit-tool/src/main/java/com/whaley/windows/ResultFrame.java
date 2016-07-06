@@ -1,4 +1,4 @@
-package windows;
+package com.whaley.windows;
 
 import java.awt.BorderLayout;
 import java.awt.EventQueue;
@@ -13,8 +13,8 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.JList;
 
 import com.sun.org.apache.xml.internal.security.Init;
-import com.whaley.hprof.sqlitemanager.InstanceTraceItem;
 import com.whaley.hprof.sqlitemanager.SqliteManager;
+import com.whaley.hprof.sqlitemanager.model.InstanceTraceItem;
 
 import javax.swing.JTree;
 import javax.swing.JTextField;
@@ -25,6 +25,7 @@ import java.awt.event.WindowEvent;
 
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
+
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.awt.GridBagLayout;

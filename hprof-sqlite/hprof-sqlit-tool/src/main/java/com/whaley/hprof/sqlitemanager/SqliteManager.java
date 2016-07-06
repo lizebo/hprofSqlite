@@ -7,6 +7,9 @@ import com.google.common.collect.Multiset.Entry;
 import com.sun.org.apache.bcel.internal.generic.NEW;
 import com.sun.org.apache.regexp.internal.recompile;
 import com.sun.xml.internal.stream.Entity;
+import com.whaley.hprof.sqlitemanager.model.IndexHashMap;
+import com.whaley.hprof.sqlitemanager.model.IndexMap;
+import com.whaley.hprof.sqlitemanager.model.InstanceTraceItem;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -45,6 +48,7 @@ public class SqliteManager {
 	private IndexHashMap mapArr; // 数组引用映射表
 	private HashMap<Integer, String> indexClassName; // classId->classname
 	private Hashtable<Integer, ObjectArray> objArr; // objectArr表
+	private Hashtable<Integer, PrimitiveArray> priArr;
 	private Hashtable<Integer, InstanceTraceItem> initedTraceItems; // 记录已查找过的instance路径
 
 	private HashMap<Integer, List<InstanceField>> classFiled; // class instance
@@ -91,6 +95,7 @@ public class SqliteManager {
 		// objArrIndex = new IndexHashMap();
 		instanceRefMap = new HashSet<IndexMap>();
 		objArr = new Hashtable<Integer, ObjectArray>();
+		priArr = new Hashtable<Integer, PrimitiveArray>();
 		rootObjArr = new Hashtable<Integer, ObjectArray>();
 		// instanceIndexMap = new Hashtable<Integer, InstanceTraceItem>();
 		initedTraceItems = new Hashtable<Integer, InstanceTraceItem>();
@@ -889,20 +894,19 @@ public class SqliteManager {
 				insertState.close();
 				break;
 			case HeapTag.PRIMITIVE_ARRAY_DUMP:
-				buffer.append("insert into ")
-						.append(SQLDOMAIN.TABLE_PRIMITIVEARRAY)
-						.append(" values(")
-						.append(((PrimitiveArray) obj).getObjectId())
-						.append(",")
-						.append(((PrimitiveArray) obj).getType().type)
-						.append(",")
-						.append(((PrimitiveArray) obj).getArrayData().length)
-						.append(");");
-				insertState = conn.prepareStatement(buffer.toString());
-				insertState.executeUpdate();
-				if (insertState != null) {
-					insertState.close();
-				}
+				PrimitiveArray array = (PrimitiveArray) obj;
+				priArr.put(array.getObjectId(), array);
+//				buffer.append("insert into ")
+//						.append(SQLDOMAIN.TABLE_PRIMITIVEARRAY)
+//						.append(" values(").append(array.getObjectId())
+//						.append(",").append(array.getType().type).append(",")
+//						.append(array.getArrayData().length).append(");");
+//				insertState = conn.prepareStatement(buffer.toString());
+//				insertState.executeUpdate();
+//
+//				if (insertState != null) {
+//					insertState.close();
+//				}
 				break;
 			case HeapTag.OBJECT_ARRAY_DUMP:
 				ObjectArray objectArray = (ObjectArray) obj;
@@ -1404,6 +1408,29 @@ public class SqliteManager {
 						rootObjArr.put(value, objArr.get(value));
 						instanceRefMap.add(new IndexMap(id, value, name,
 								IndexMap.TYPE_INSTANCE));
+					} else if (value != 0 && priArr.containsKey(value)) {
+						PrimitiveArray array = priArr.get(value);
+						StringBuilder buffer = new StringBuilder();
+						buffer.append("insert into ")
+								.append(SQLDOMAIN.TABLE_PRIMITIVEARRAY)
+								.append(" values(").append(array.getObjectId())
+								.append(",").append(array.getType().type)
+								.append(",")
+								.append(array.getArrayData().length)
+								.append(");");
+						try {
+							PreparedStatement insertState = conn
+									.prepareStatement(buffer.toString());
+							insertState.executeUpdate();
+							if (insertState != null) {
+								insertState.close();
+							}
+						} catch (SQLException e) {
+							// TODO Auto-generated catch block
+//							e.printStackTrace();
+						}
+						instanceRefMap.add(new IndexMap(id, value, name,
+								IndexMap.TYPE_PRI));
 					}
 				}
 				i = i + size;
@@ -1525,7 +1552,7 @@ public class SqliteManager {
 									// TODO Auto-generated method stub
 									InstanceTraceItem temp;
 									if (!initedTraceItems.containsKey(temp_id)) {
-										// System.out.print("instance\n");										
+										// System.out.print("instance\n");
 										temp = new InstanceTraceItem();
 										temp.setId(temp_id);
 										temp.setName(getClassNameForInstance(temp_id));
@@ -1542,7 +1569,7 @@ public class SqliteManager {
 							});
 						} else {
 							InstanceTraceItem temp;
-							if (!initedTraceItems.containsKey(temp_id)) {								
+							if (!initedTraceItems.containsKey(temp_id)) {
 								temp = new InstanceTraceItem();
 								temp.setId(temp_id);
 								temp.setName(getClassNameForInstance(temp_id));
